@@ -1,17 +1,16 @@
 #include "net/inet_address.hpp"
 
-namespace unisock
-{
+using namespace unisock;
 
 inet_address::inet_address()
 {
-	this->_ip_address = "unknown";
-	this->_hostname = "unknown";
-	this->_port = 0;
+	_ip_address = "unknown";
+	_hostname = "unknown";
+	_port = 0;
 
 	// zeroing structs
-	std::memset(&this->_address_4, 0, sizeof(this->_address_4));
-	std::memset(&this->_address_6, 0, sizeof(this->_address_6));
+	std::memset(&_address_4, 0, sizeof(_address_4));
+	std::memset(&_address_6, 0, sizeof(_address_6));
 }
 
  // constructs from IPv4 addr (i.e. on connection accepted)
@@ -19,11 +18,11 @@ inet_address::inet_address(const struct sockaddr_in& addr)
 :	_address_4(addr),
 	_address_family(AF_INET)
 {
-	this->_ip_address = this->_get_ip_of_addr4(this->_address_4.sin_addr);
-	this->_hostname = this->_get_hostname_of_addr(reinterpret_cast<sockaddr*>(&this->_address_4), sizeof(addr));
-	this->_port = ntohs(this->_address_4.sin_port);
+	_ip_address = _get_ip_of_addr4(_address_4.sin_addr);
+	_hostname = _get_hostname_of_addr(reinterpret_cast<sockaddr*>(&_address_4), sizeof(addr));
+	_port = ntohs(_address_4.sin_port);
 	// zeroing ipv6 struct
-	std::memset(&this->_address_6, 0, sizeof(this->_address_6));
+	std::memset(&_address_6, 0, sizeof(_address_6));
 }
 
 
@@ -32,11 +31,11 @@ inet_address::inet_address(const struct sockaddr_in6& addr)
 :	_address_6(addr),
 	_address_family(AF_INET6)
 {
-	this->_ip_address = this->_get_ip_of_addr6(this->_address_6.sin6_addr);
-	this->_hostname = this->_get_hostname_of_addr(reinterpret_cast<sockaddr*>(&this->_address_6), sizeof(addr));
-	this->_port = ntohs(this->_address_6.sin6_port);
+	_ip_address = _get_ip_of_addr6(_address_6.sin6_addr);
+	_hostname = _get_hostname_of_addr(reinterpret_cast<sockaddr*>(&_address_6), sizeof(addr));
+	_port = ntohs(_address_6.sin6_port);
 	// zeroing ipv4 struct
-	std::memset(&this->_address_4, 0, sizeof(this->_address_4));
+	std::memset(&_address_4, 0, sizeof(_address_4));
 }
 
 
@@ -46,19 +45,19 @@ inet_address::inet_address(const std::string& hostname, const int port, const sa
 	_port(static_cast<in_port_t>(port)),
 	_address_family(family)
 {
-	if (this->_address_family == AF_INET)
+	if (_address_family == AF_INET)
 	{
-		this->_get_addr_by_hostname(reinterpret_cast<sockaddr*>(&this->_address_4), sizeof(this->_address_4), this->_ip_address, this->_hostname, AF_INET);
-		this->_address_4.sin_port = htons(this->_port);
+		_get_addr_by_hostname(reinterpret_cast<sockaddr*>(&_address_4), sizeof(_address_4), _ip_address, _hostname, AF_INET);
+		_address_4.sin_port = htons(_port);
 		// zeroing ipv6 struct
-		std::memset(&this->_address_6, 0, sizeof(this->_address_6));
+		std::memset(&_address_6, 0, sizeof(_address_6));
 	}
-	else if (this->_address_family == AF_INET6)
+	else if (_address_family == AF_INET6)
 	{
-		this->_get_addr_by_hostname(reinterpret_cast<sockaddr*>(&this->_address_6), sizeof(this->_address_6), this->_ip_address, this->_hostname, AF_INET6);
-		this->_address_6.sin6_port = htons(this->_port);
+		_get_addr_by_hostname(reinterpret_cast<sockaddr*>(&_address_6), sizeof(_address_6), _ip_address, _hostname, AF_INET6);
+		_address_6.sin6_port = htons(_port);
 		// zeroing ipv4 struct
-		std::memset(&this->_address_4, 0, sizeof(this->_address_4));
+		std::memset(&_address_4, 0, sizeof(_address_4));
 	}
 	else
 		throw std::invalid_argument("unexpected family type, expected AF_INET or AF_INET6.");
@@ -77,50 +76,50 @@ inet_address::inet_address(const std::string& hostname, const int port, const sa
  // constructs from IPv4 addr (i.e. on connection accepted)
 void inet_address::setAddress(const struct sockaddr_in& addr)
 {
-	this->_address_4 = addr;
-	this->_address_family =  AF_INET6;
+	_address_4 = addr;
+	_address_family =  AF_INET6;
 
-	this->_ip_address = this->_get_ip_of_addr4(this->_address_4.sin_addr);
-	this->_hostname = this->_get_hostname_of_addr(reinterpret_cast<sockaddr*>(&this->_address_4), sizeof(addr));
-	this->_port = ntohs(this->_address_4.sin_port);
+	_ip_address = _get_ip_of_addr4(_address_4.sin_addr);
+	_hostname = _get_hostname_of_addr(reinterpret_cast<sockaddr*>(&_address_4), sizeof(addr));
+	_port = ntohs(_address_4.sin_port);
 	// zeroing ipv6 struct
-	std::memset(&this->_address_6, 0, sizeof(this->_address_6));
+	std::memset(&_address_6, 0, sizeof(_address_6));
 }
 
 
 // constructs from IPv6 addr (i.e. on connection accepted)
 void inet_address::setAddress(const struct sockaddr_in6& addr)
 {
-	this->_address_6 = addr;
-	this->_address_family =  AF_INET6;
-	this->_ip_address = this->_get_ip_of_addr6(this->_address_6.sin6_addr);
-	this->_hostname = this->_get_hostname_of_addr(reinterpret_cast<sockaddr*>(&this->_address_6), sizeof(addr));
-	this->_port = ntohs(this->_address_6.sin6_port);
+	_address_6 = addr;
+	_address_family =  AF_INET6;
+	_ip_address = _get_ip_of_addr6(_address_6.sin6_addr);
+	_hostname = _get_hostname_of_addr(reinterpret_cast<sockaddr*>(&_address_6), sizeof(addr));
+	_port = ntohs(_address_6.sin6_port);
 	// zeroing ipv4 struct
-	std::memset(&this->_address_4, 0, sizeof(this->_address_4));
+	std::memset(&_address_4, 0, sizeof(_address_4));
 }
 
 
 // Constructs a new sockaddr depending on family (i.e. for initialisation of struct sockaddr)
 void inet_address::setAddress(const std::string& hostname, const int port, const sa_family_t family)
 {
-	this->_hostname = hostname,
-	this->_port = static_cast<in_port_t>(port),
-	this->_address_family = family;
+	_hostname = hostname,
+	_port = static_cast<in_port_t>(port),
+	_address_family = family;
 
-	if (this->_address_family == AF_INET)
+	if (_address_family == AF_INET)
 	{
-		this->_get_addr_by_hostname(reinterpret_cast<sockaddr*>(&this->_address_4), sizeof(this->_address_4), this->_ip_address, this->_hostname, AF_INET);
-		this->_address_4.sin_port = htons(this->_port);
+		_get_addr_by_hostname(reinterpret_cast<sockaddr*>(&_address_4), sizeof(_address_4), _ip_address, _hostname, AF_INET);
+		_address_4.sin_port = htons(_port);
 		// zeroing ipv6 struct
-		std::memset(&this->_address_6, 0, sizeof(this->_address_6));
+		std::memset(&_address_6, 0, sizeof(_address_6));
 	}
-	else if (this->_address_family == AF_INET6)
+	else if (_address_family == AF_INET6)
 	{
-		this->_get_addr_by_hostname(reinterpret_cast<sockaddr*>(&this->_address_6), sizeof(this->_address_6), this->_ip_address, this->_hostname, AF_INET6);
-		this->_address_6.sin6_port = htons(this->_port);
+		_get_addr_by_hostname(reinterpret_cast<sockaddr*>(&_address_6), sizeof(_address_6), _ip_address, _hostname, AF_INET6);
+		_address_6.sin6_port = htons(_port);
 		// zeroing ipv4 struct
-		std::memset(&this->_address_4, 0, sizeof(this->_address_4));
+		std::memset(&_address_4, 0, sizeof(_address_4));
 	}
 	else
 		throw std::invalid_argument("unexpected family type, expected AF_INET or AF_INET6.");
@@ -135,14 +134,14 @@ void inet_address::setAddress(const std::string& hostname, const int port, const
 
 struct sockaddr* inet_address::getAddress()
 {
-	switch (this->_address_family)
+	switch (_address_family)
 	{
 	case AF_INET:
-		return (reinterpret_cast<struct sockaddr*>(&this->_address_4));
+		return (reinterpret_cast<struct sockaddr*>(&_address_4));
 		break;
 
 	case AF_INET6:
-		return (reinterpret_cast<struct sockaddr*>(&this->_address_6));
+		return (reinterpret_cast<struct sockaddr*>(&_address_6));
 		break;
 	default:
 		return (nullptr);
@@ -154,14 +153,14 @@ struct sockaddr* inet_address::getAddress()
 
 size_t		inet_address::getAddressSize() const
 {
-	switch (this->_address_family)
+	switch (_address_family)
 	{
 	case AF_INET:
-		return (sizeof(this->_address_4));
+		return (sizeof(_address_4));
 		break;
 
 	case AF_INET6:
-		return (sizeof(this->_address_6));
+		return (sizeof(_address_6));
 		break;
 	default:
 		return (0);
@@ -177,32 +176,32 @@ size_t		inet_address::getAddressSize() const
 
 std::string		inet_address::getHostname() const
 {
-	return (this->_hostname + "(" + this->_ip_address + ")");
+	return (_hostname + "(" + _ip_address + ")");
 }
 
 std::string		inet_address::getIpAddress() const
 {
-	return (this->_ip_address);
+	return (_ip_address);
 }
 
 int				inet_address::getPort() const
 {
-	return (this->_port);
+	return (_port);
 }
 
 sa_family_t		inet_address::getAddressFamily() const
 {
-	return (this->_address_family);
+	return (_address_family);
 }
 
 sockaddr_in		inet_address::getAddress4() const
 {
-	return (this->_address_4);
+	return (_address_4);
 }
 
 sockaddr_in6	inet_address::getAddress6() const
 {
-	return (this->_address_6);
+	return (_address_6);
 }
 
 
@@ -235,9 +234,9 @@ void			inet_address::_get_addr_by_hostname(sockaddr *const addr, const socklen_t
 		throw std::logic_error(std::string("Unable to retrieve host ip address: ") + gai_strerror(err) + ": " + std::to_string(err));
 
 	if (res->ai_family == AF_INET)
-		ip_address = this->_get_ip_of_addr4(((sockaddr_in*)(res->ai_addr))->sin_addr);
+		ip_address = _get_ip_of_addr4(((sockaddr_in*)(res->ai_addr))->sin_addr);
 	else if (res->ai_family == AF_INET6)
-		ip_address = this->_get_ip_of_addr6(((sockaddr_in6*)(res->ai_addr))->sin6_addr);
+		ip_address = _get_ip_of_addr6(((sockaddr_in6*)(res->ai_addr))->sin6_addr);
 
 	if (addr_len < res->ai_addrlen)
 		throw std::logic_error("Provided sockaddr is too small for ai_addrlen (expected " + std::to_string(res->ai_addrlen) + " got " + std::to_string(addr_len) + ")");
@@ -289,4 +288,4 @@ std::string		inet_address::_get_ip_of_addr6(const struct in6_addr& addr)
 	return (std::string(ip_addr_buffer));
 }
 
-} // namespace unisock
+// UNISOCK_NAMESPACE_END

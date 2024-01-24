@@ -1,6 +1,7 @@
 #pragma once
 
 #include "namespaces.hpp"
+#include "events/socket_container.hpp"
 
 #include <unistd.h>
 #include <sys/socket.h>
@@ -14,8 +15,10 @@ class empty_data {};
 class socket_wrap
 {
     public:
-        socket_wrap();
-        socket_wrap(int socket);
+        socket_wrap() = delete;
+
+        socket_wrap(events::_lib::isocket_container* container);
+        socket_wrap(events::_lib::isocket_container* container, int socket);
 
         bool    init(const int domain, const int type, const int protocol);
 
@@ -23,8 +26,11 @@ class socket_wrap
 
         void    close();
 
+        events::_lib::isocket_container*  get_container() const;
+
     private:
-        int _sock;
+        int                               _sock;
+        events::_lib::isocket_container*  container;
 };
 
 /* Socket with data */
@@ -32,12 +38,14 @@ template<typename ...Data>
 class socket : public socket_wrap
 {
     public:
-        socket()
-        : socket_wrap()
+        socket() = delete;
+
+        socket(events::_lib::isocket_container* container)
+        : socket_wrap(container)
         {}
 
-        socket(int socket)
-        : socket_wrap(socket)
+        socket(events::_lib::isocket_container* container, int socket)
+        : socket_wrap(container, socket)
         {}
 
     public:

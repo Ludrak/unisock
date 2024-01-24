@@ -5,157 +5,195 @@
 #include <vector>
 #include <map>
 
-#include "unisock.hpp"
+#include "namespaces.hpp"
 #include "net/socket.hpp"
-
-#include <iostream>
+//#include <iostream>
 
 UNISOCK_NAMESPACE_START
 
 UNISOCK_EVENTS_NAMESPACE_START
 
 
+UNISOCK_LIB_NAMESPACE_START
+
+/* predefinition of socket_container */
+template<typename ..._Data>
+class socket_container;
+
+UNISOCK_LIB_NAMESPACE_END
+
+
 /* predefinition of handler */
-template<handler_type _Handler>
 class handler;
 
+/* handler types enum */
+enum  handler_types
+{
+    POLL,
+    EPOLL,
+    KQUEUE,
+    SELECT
+};
+
+/* select poll handler */
+#ifndef USE_POLL_HANDLER
+
+# if     defined(__LINUX__)
+#  define _POLL_HANDLER handler_types::EPOLL
+
+# elif   defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
+#  define _POLL_HANDLER handler_types::POLL
+//#  include "events/poll.hpp"
+
+// # elif   defined(__WIN32__) || defined(__WIN64__)
+// #  define _POLL_HANDLER handler_types::POLL
+
+# else
+#  warning "could not retrieve system os for selecting poll handler (see "__FILENAME__":"__LINE__"), setting default to select() (select.h)"
+#  define _POLL_HANDLER handler_types::SELECT
+
+# endif
+
+#else
+# define _POLL_HANDLER USE_POLL_HANDLER
+#endif
+
+/* selected poll handler */
+static constexpr handler_types handler_type = _POLL_HANDLER;
 
 
+UNISOCK_LIB_NAMESPACE_START
 
 /* templates to be specialized for each SockHandler type*/
+template<handler_types S>
+class socket_data;
 
-template<handler_type S>
-class socket_data
-{
-};
-
-template<handler_type _Handler>
+/* data creation, needs to be defined for each handler */
+template<handler_types _Handler>
 socket_data<_Handler>   make_data(int socket);
 
+/* implementation of poll, needs to be defined for each handler */
+template<handler_types _Handler>
+void                    poll_impl(handler& handler);
 
-template<handler_type _Handler>
-void                    poll(const handler<_Handler>& handler);
-
-/*******************************************************/
-
-
-/* Generic types for different types of client data / sock handler*/
-
-template<typename ..._Data>
-class socket_container
-{
-    public:
-        typedef unisock::socket<_Data...> socket_type;
-
-        socket_container() {}
-        virtual ~socket_container() {}
-        
-    protected:
-        // void    attach_handler(const handler<unisock::DEFAULT_SOCKET_HANDLER>* handler)
-        // {
-        //     this->handler = handler;
-        // }
-
-        // void    detach_handler()
-        // {
-        //     this->handler = nullptr;
-        // }
-
-        std::map<int, socket_type>                  sockets;
-
-        friend class handler<unisock::DEFAULT_SOCKET_HANDLER>;
-};
+UNISOCK_LIB_NAMESPACE_END
 
 
-template<handler_type _Handler = unisock::DEFAULT_SOCKET_HANDLER>
+
+/* poll on selected handler type */
+void                    poll(handler& handler);
+
+
+
+
+/* handles a group of socket for one or multiple socket_container */
+/* the container needs to subscribe itself to the handler */
 class handler
 {
     public:
         handler() = default;
-        ~handler()
-        { 
-        }
+        ~handler() = default;
 
         template<typename ..._Data>
-        handler(const socket_container<_Data...>& container)
-        {
-            this->subscribe(container);
-        }
+        handler(_lib::socket_container<_Data...>& container);
 
         template<typename _InputIterator>
         handler(_InputIterator begin, _InputIterator end,
-        typename std::enable_if<std::is_base_of<handler, typename _InputIterator::value_type>::value>::type = 0)
+        typename std::enable_if<
+                    std::is_base_of<
+                        handler,
+                        typename _InputIterator::value_type>::value,
+                    int
+                >::type = 0)
         {
-            std::for_each(begin, end, this->subscribe);
+            std::for_each(begin, end, [&](auto& container) { subscribe(container); });
         }
 
         template<typename ..._Data>
-        void    subscribe(const socket_container<_Data...>& container)
-        {
-            for (const auto& s : container.sockets)
-            {
-                sockets.push_back( make_data<_Handler>(s.second.getSocket()) );
-            }
-            // container.attach_handler(this);
-        }
+        void    subscribe(_lib::socket_container<_Data...>& container);
+
+        template<typename ..._Data>
+        void    _add_socket(int socket, unisock::socket<_Data...>* ref);
     
     private:
-        std::vector<socket_data<_Handler>>  sockets;
 
-        friend void unisock::events::poll(const handler<_Handler>&);
+        void    _receive(int socket);
+        void    _send(int socket);
+
+        std::vector<_lib::socket_data<unisock::events::handler_type>> sockets;
+        std::vector<unisock::socket_wrap*>                            socket_ptrs;
+
+        friend void unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler&);
 };
 
 
 
-
-
-/* poll (poll.h) */
-// template<class _InputIterator, class ..._Data>
-// typename ::std::enable_if_t<unisock::DEFAULT_SOCKET_HANDLER == handler_type::POLL && std::is_base_of<isocket_container, typename _InputIterator::value_type>::value, void>
-// poll(_InputIterator begin, _InputIterator end)
-// {
-//     // connect lists accordingly, poll, then connect back to original 
-// };
+UNISOCK_LIB_NAMESPACE_START
 
 
 
-// template<typename _SockHandler>
-// void    poll(const typename std::vector<_SockHandler>::iterator& begin, const typename std::vector<_SockHandler>::iterator& end)
-// {
+#include "socket_container.hpp"
 
-// };
-
-
-struct AsyncOperation
+/* contains sockets, can be attached to a handler to poll on those socket 
+   a handler needs to be attached to create a socket                      */
+template<typename ..._Data>
+class socket_container : public isocket_container
 {
-    std::vector<std::function<void(void)>> operations;
+    public:
+        using socket_type = unisock::socket<_Data...>;
+        using poll_data = unisock::events::_lib::socket_data<unisock::events::handler_type>;
 
-    AsyncOperation *then(std::function<void(void)> next_operation)
-    {
-        this->operations.push_back(next_operation);
-        return (this);
-    }
+        socket_container() = default;
+        virtual ~socket_container() = default;
+        
+    protected:
+        template<typename ..._Args>
+        socket_type*  make_socket(_Args&&... args)
+        {
+            assert(this->handler != nullptr);
 
-    void execute()
-    {
-        std::thread t([&]() {
-            std::for_each(this->operations.begin(), this->operations.end(),
-                [](const std::function<void(void)>& op) {
-                    op();
-            });
-        });
-    }
+            socket_type sock { this };
+            sock.init(std::forward<_Args>(args)...);
+            auto insert = this->sockets.insert(std::make_pair(sock.getSocket(), sock));
+            if (!insert.second)
+                return nullptr; // insert error
+            this->handler->_add_socket(sock.getSocket(), &insert.first->second);
+            return (&insert.first->second);
+        }
 
-    AsyncOperation(std::function<void(void)> operation)
-        : operations(1, operation)
-    {}
+
+        std::map<int, socket_type>  sockets;
+        handler*                    handler;
+
+        friend class unisock::events::handler;
 };
 
-AsyncOperation *async(std::function<void(void)> operation)
+
+UNISOCK_LIB_NAMESPACE_END
+
+
+UNISOCK_EVENTS_NAMESPACE_END
+
+UNISOCK_NAMESPACE_END
+
+#define _EVENTS_DEF
+
+/* include correct poll handler here */
+#include "events/poll.hpp"
+
+#include "events/handler.hpp"
+#include "events/socket_container.hpp"
+
+
+UNISOCK_NAMESPACE_START
+
+UNISOCK_EVENTS_NAMESPACE_START
+
+/* poll on selected handler type */
+void                    poll(handler& handler)
 {
-    return (new AsyncOperation(operation));
+    unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler);
 }
-
 
 UNISOCK_EVENTS_NAMESPACE_END
 

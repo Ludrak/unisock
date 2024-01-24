@@ -1,6 +1,6 @@
 #include "tcp/tcp.hpp"
 #include "events/events.hpp"
-#include "events/poll.hpp"
+// #include "events/poll.hpp"
 
 #include <tuple>
 
@@ -17,30 +17,63 @@ class client_data
 
 int main()
 {
-    tcp::server<client_data> s1 { "127.0.0.1", 9000 };
-    tcp::server<> s2 { "127.0.0.1", 8000 };
-    s1.listen();
-    s2.listen();
 
-    events::handler<> h {};
-    h.subscribe(s1);
-    h.subscribe(s2);
+    /* basic server */
+    /* single server, single connection */
+    {
+        tcp::server<client_data> server { };
 
-    events::poll(h);
+        events::handler handler { server };
 
-    s1.close();
-    s2.close();
+        server.listen("127.0.0.1", 9000);
 
-    tcp::server<client_data> server { "127.0.0.1", 9000 };
-    server.listen();
-
-    events::handler<> handler {};
-
-    events::async([&](){
         events::poll(handler);
-    })->then([&](){
+
+        server.close();
+    }
+
+
+    // /* multiple servers on one handler (with different client data types)*/
+    // /* optimized for few, but bigger servers, allows for different server types to be polled together (even with different protocol types)*/
+    {
+        tcp::server<client_data> s1 {  };
+        tcp::server<> s2 { };
+
+        events::handler handler {};
+        handler.subscribe(s1);
+        handler.subscribe(s2);
+
+        s1.listen("127.0.0.1", 9000);
+        s2.listen("127.0.0.1", 8000);
+
         events::poll(handler);
-    })->then([&]{
+
+        s1.close();
+        s2.close();
+    }
+
+    // /* one servers with multiple connections on one handler */
+    // /* optimized for polling lots of connection from one server */
+    {
+        tcp::server<> server {  };
+        events::handler handler { server };
+
+        server.listen("127.0.0.1", 1000);
+        server.listen("127.0.0.1", 2000);
+        server.listen("127.0.0.1", 3000);
+        server.listen("127.0.0.1", 4000);
+        server.listen("127.0.0.1", 5000);
+
         events::poll(handler);
-    })->execute();
+
+        server.close();
+    }
+
+
+    // events::async([&](){
+    // })->then([&](){
+    //     events::poll(handler);
+    // })->then([&]{
+    //     events::poll(handler);
+    // })->execute();
 }
