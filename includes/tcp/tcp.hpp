@@ -30,15 +30,15 @@ class socket_data
 };
 
 template<typename ..._Data>
-class server : public unisock::server<_Data..., socket_data> //, public unisock::inet_address
+class server : public unisock::_lib::server<_Data..., socket_data> //, public unisock::inet_address
 {
     public:
-        using server_type = typename unisock::server<_Data..., socket_data>;
+        using server_type = typename unisock::_lib::server<_Data..., socket_data>;
         using socket_type = typename server_type::socket_type;
 
        // server() = delete;
         server(/* const std::string& ip_address, const int port, const sa_family_t family = AF_INET */)
-        :   unisock::server<_Data..., socket_data>()
+        :   unisock::_lib::server<_Data..., socket_data>()
         //    unisock::inet_address(ip_address, port, family)
         {
             // server::socket_type sock = server::socket_type();
@@ -66,7 +66,7 @@ class server : public unisock::server<_Data..., socket_data> //, public unisock:
     private:
         // called when some socket needs to read received data
         // (i.e. on received)
-        virtual void    on_receive(socket_wrap* s) override
+        virtual void    on_receive(unisock::_lib::socket_wrap* s) override
         {
             auto* socket = reinterpret_cast<socket_type*>(s);
             if (socket->data.type == connection_type::SERVER)
@@ -99,20 +99,11 @@ class server : public unisock::server<_Data..., socket_data> //, public unisock:
                 }
                 std::cout << "received from " << socket->data.address.getHostname() << " on socket " << socket->getSocket() << ": '" << std::string(buffer, n_bytes) << "'" << std::endl;
             }
-            
-            // 1. if socket is a listener 
-            // -> accept
-            // -> create client
-            // -> add socket to handler
-
-            // 2. if socket is client (that has already been accepted)
-            // -> recv
-            // -> call ::on handler
         }
 
         // called when a socket that was requesting write got writeable
         // (i.e. on queued send)
-        virtual void    on_writeable(socket_wrap* socket) override
+        virtual void    on_writeable(unisock::_lib::socket_wrap* socket) override
         {
             (void)socket;
             // send queued data if any

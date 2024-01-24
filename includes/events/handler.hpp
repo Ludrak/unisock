@@ -34,10 +34,10 @@ inline void    handler::_send(int socket)
 }
 
 template<typename ..._Data>
-inline void    handler::_add_socket(int socket, unisock::socket<_Data...>* ref)
+inline void    handler::_add_socket(int socket, unisock::_lib::socket<_Data...>* ref)
 {
     this->sockets.push_back(_lib::make_data<handler_type>(socket));
-    this->socket_ptrs.push_back(reinterpret_cast<socket_wrap*>(ref));
+    this->socket_ptrs.push_back(reinterpret_cast<unisock::_lib::socket_wrap*>(ref));
 }
 
 inline void    handler::_del_socket(int socket)

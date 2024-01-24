@@ -2,6 +2,8 @@
 
 UNISOCK_NAMESPACE_START
 
+UNISOCK_LIB_NAMESPACE_START
+
 socket_wrap::socket_wrap(events::_lib::isocket_container* container)
 : _sock(-1), container(container)
 {}
@@ -37,5 +39,7 @@ events::_lib::isocket_container*  socket_wrap::get_container() const
 {
     return (this->container);
 }
+
+UNISOCK_LIB_NAMESPACE_END
 
 UNISOCK_EVENTS_NAMESPACE_END

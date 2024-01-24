@@ -113,7 +113,7 @@ class handler
         void    subscribe(_lib::socket_container<_Data...>& container);
 
         template<typename ..._Data>
-        void    _add_socket(int socket, unisock::socket<_Data...>* ref);
+        void    _add_socket(int socket, unisock::_lib::socket<_Data...>* ref);
         void    _del_socket(int socket);
     
     private:
@@ -122,7 +122,7 @@ class handler
         void    _send(int socket);
 
         std::vector<_lib::socket_data<unisock::events::handler_type>> sockets;
-        std::vector<unisock::socket_wrap*>                            socket_ptrs;
+        std::vector<unisock::_lib::socket_wrap*>                      socket_ptrs;
 
         friend void unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler&);
 };
@@ -141,7 +141,7 @@ template<typename ..._Data>
 class socket_container : public isocket_container
 {
     public:
-        using socket_type = unisock::socket<_Data...>;
+        using socket_type = unisock::_lib::socket<_Data...>;
         using poll_data = unisock::events::_lib::socket_data<unisock::events::handler_type>;
 
         socket_container() = default;

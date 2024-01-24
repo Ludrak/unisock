@@ -5,6 +5,8 @@
 
 UNISOCK_NAMESPACE_START
 
+UNISOCK_LIB_NAMESPACE_START
+
 template<typename ..._Data>
 class server :  public unisock::events::_lib::socket_container<_Data...>
 {
@@ -30,5 +32,7 @@ public:
         std::for_each(this->sockets.begin(), this->sockets.end(), [](auto& pair) { pair.second.close(); });
     };
 };
+
+UNISOCK_LIB_NAMESPACE_END
 
 UNISOCK_NAMESPACE_END

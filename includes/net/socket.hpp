@@ -8,8 +8,8 @@
 
 UNISOCK_NAMESPACE_START
 
-/* used to define null class when data is not required*/
-class empty_data {};
+UNISOCK_LIB_NAMESPACE_START
+
 
 /* Wrap of socket class */
 class socket_wrap
@@ -54,5 +54,7 @@ class socket : public socket_wrap
     public:
         class : public Data... {}   data;
 };
+
+UNISOCK_LIB_NAMESPACE_END
 
 UNISOCK_NAMESPACE_END
