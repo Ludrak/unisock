@@ -36,15 +36,10 @@ class server : public unisock::_lib::server<_Data..., socket_data> //, public un
         using server_type = typename unisock::_lib::server<_Data..., socket_data>;
         using socket_type = typename server_type::socket_type;
 
-       // server() = delete;
-        server(/* const std::string& ip_address, const int port, const sa_family_t family = AF_INET */)
-        :   unisock::_lib::server<_Data..., socket_data>()
-        //    unisock::inet_address(ip_address, port, family)
+        server() = delete;
+        server(events::handler& handler)
+        : unisock::_lib::server<_Data..., socket_data>(handler)
         {
-            // server::socket_type sock = server::socket_type();
-            // sock.data.type = connection_type::SERVER;
-            // sock.init(family, SOCK_STREAM, 0);
-            // this->sockets.insert(std::make_pair(unisock::events::make_data<unisock::handler_type>(sock.getSocket()), sock));
         }
 
     private:

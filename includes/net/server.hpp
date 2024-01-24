@@ -14,8 +14,10 @@ public:
     using container_type = unisock::events::_lib::socket_container<_Data...>;
     using socket_type = typename container_type::socket_type;
     
-    server()
-    : unisock::events::_lib::socket_container<_Data...>()
+    server() = delete;
+
+    server(events::handler& handler)
+    : unisock::events::_lib::socket_container<_Data...>(handler)
     {}
 
     virtual ~server()
@@ -29,7 +31,8 @@ public:
 
     virtual void    close()
     {
-        std::for_each(this->sockets.begin(), this->sockets.end(), [](auto& pair) { pair.second.close(); });
+        while (this->sockets.size() > 0)
+            this->delete_socket(this->sockets.begin()->second.getSocket());
     };
 };
 

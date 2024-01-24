@@ -9,29 +9,18 @@ UNISOCK_NAMESPACE_START
 UNISOCK_EVENTS_NAMESPACE_START
 
 
-template<typename ..._Data>
-inline handler::handler(_lib::socket_container<_Data...>& container)
-{
-    this->subscribe(container);
-}
+// template<typename ..._Data>
+// inline handler::handler(_lib::socket_container<_Data...>& container)
+// {
+//     this->subscribe(container);
+// }
 
 
-template<typename ..._Data>
-inline void    handler::subscribe(_lib::socket_container<_Data...>& container)
-{
-    container.handler = this;
-}
-
-
-inline void    handler::_receive(int socket)
-{
-    (void)socket;
-}
-
-inline void    handler::_send(int socket)
-{
-    (void)socket;
-}
+// template<typename ..._Data>
+// inline void    handler::subscribe(_lib::socket_container<_Data...>& container)
+// {
+//     container.handler = this;
+// }
 
 template<typename ..._Data>
 inline void    handler::_add_socket(int socket, unisock::_lib::socket<_Data...>* ref)

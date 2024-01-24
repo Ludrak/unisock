@@ -94,32 +94,29 @@ class handler
         handler() = default;
         ~handler() = default;
 
-        template<typename ..._Data>
-        handler(_lib::socket_container<_Data...>& container);
+        // template<typename ..._Data>
+        // handler(_lib::socket_container<_Data...>& container);
 
-        template<typename _InputIterator>
-        handler(_InputIterator begin, _InputIterator end,
-        typename std::enable_if<
-                    std::is_base_of<
-                        handler,
-                        typename _InputIterator::value_type>::value,
-                    int
-                >::type = 0)
-        {
-            std::for_each(begin, end, [&](auto& container) { subscribe(container); });
-        }
+        // template<typename _InputIterator>
+        // handler(_InputIterator begin, _InputIterator end,
+        // typename std::enable_if<
+        //             std::is_base_of<
+        //                 handler,
+        //                 typename _InputIterator::value_type>::value,
+        //             int
+        //         >::type = 0)
+        // {
+        //     std::for_each(begin, end, [&](auto& container) { subscribe(container); });
+        // }
 
-        template<typename ..._Data>
-        void    subscribe(_lib::socket_container<_Data...>& container);
+        // template<typename ..._Data>
+        // void    subscribe(_lib::socket_container<_Data...>& container);
 
         template<typename ..._Data>
         void    _add_socket(int socket, unisock::_lib::socket<_Data...>* ref);
         void    _del_socket(int socket);
     
     private:
-
-        void    _receive(int socket);
-        void    _send(int socket);
 
         std::vector<_lib::socket_data<unisock::events::handler_type>> sockets;
         std::vector<unisock::_lib::socket_wrap*>                      socket_ptrs;
@@ -144,35 +141,35 @@ class socket_container : public isocket_container
         using socket_type = unisock::_lib::socket<_Data...>;
         using poll_data = unisock::events::_lib::socket_data<unisock::events::handler_type>;
 
-        socket_container() = default;
+        socket_container() = delete;
+        socket_container(handler& handler)
+        : handler(handler)
+        {}
+
         virtual ~socket_container() = default;
         
     protected:
         template<typename ..._Args>
         socket_type*    make_socket(_Args&&... args)
         {
-            assert(this->handler != nullptr);
-
             socket_type sock { this, std::forward<_Args>(args)... };
             auto insert = this->sockets.insert(std::make_pair(sock.getSocket(), sock));
             if (!insert.second)
                 return nullptr; // insert error
-            this->handler->_add_socket(sock.getSocket(), &insert.first->second);
+            this->handler._add_socket(sock.getSocket(), &insert.first->second);
             return (&insert.first->second);
         }
 
         void            delete_socket(int socket)
         {
-            assert (this->handler != nullptr);
-
-            this->handler->_del_socket(socket);
+            this->handler._del_socket(socket);
             this->sockets.erase(socket);
             ::close(socket);
         }
 
 
         std::map<int, socket_type>  sockets;
-        handler*                    handler;
+        handler&                    handler;
 
         friend class unisock::events::handler;
 };
