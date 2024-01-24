@@ -82,21 +82,6 @@ void    poll_impl<handler_types::POLL>(handler& handler)
         if (n_changes == 0)
             break;
     }
-    // for (auto& socket : handler.sockets)
-    // {
-    //     if (socket.revents == 0)
-    //         continue ;
-    //     // socket is available for reading
-    //     if (socket.revents & POLLIN)
-    //         handler._receive(socket.fd);
-    //     // socket is available for writing
-    //     if (socket.revents & POLLOUT)
-    //         handler._send(socket.fd);
-        
-    //     n_changes--;
-    //     if (n_changes == 0)
-    //         break;
-    // }
 }
 
 UNISOCK_LIB_NAMESPACE_END

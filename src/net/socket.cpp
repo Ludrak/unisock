@@ -10,15 +10,12 @@ socket_wrap::socket_wrap(events::_lib::isocket_container* container, int socket)
 : _sock(socket), container(container)
 {}
 
-bool    socket_wrap::init(const int domain, const int type, const int protocol)
+socket_wrap::socket_wrap(events::_lib::isocket_container* container, const int domain, const int type, const int protocol)
+: container(container)
 {
     _sock = ::socket(domain, type, protocol);
     if (_sock < 0)
-    {
         _sock = -1;
-        return (false);
-    }
-    return (true);
 }
 
 void    socket_wrap::close()

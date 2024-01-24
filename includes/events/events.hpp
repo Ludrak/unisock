@@ -114,6 +114,7 @@ class handler
 
         template<typename ..._Data>
         void    _add_socket(int socket, unisock::socket<_Data...>* ref);
+        void    _del_socket(int socket);
     
     private:
 
@@ -148,17 +149,25 @@ class socket_container : public isocket_container
         
     protected:
         template<typename ..._Args>
-        socket_type*  make_socket(_Args&&... args)
+        socket_type*    make_socket(_Args&&... args)
         {
             assert(this->handler != nullptr);
 
-            socket_type sock { this };
-            sock.init(std::forward<_Args>(args)...);
+            socket_type sock { this, std::forward<_Args>(args)... };
             auto insert = this->sockets.insert(std::make_pair(sock.getSocket(), sock));
             if (!insert.second)
                 return nullptr; // insert error
             this->handler->_add_socket(sock.getSocket(), &insert.first->second);
             return (&insert.first->second);
+        }
+
+        void            delete_socket(int socket)
+        {
+            assert (this->handler != nullptr);
+
+            this->handler->_del_socket(socket);
+            this->sockets.erase(socket);
+            ::close(socket);
         }
 
 

@@ -25,18 +25,10 @@ public:
             ::listen(this->sockets.begin()->second.getSocket(), 10 /* max pending connections */);
     }
 
-    void    close()
+    virtual void    close()
     {
         std::for_each(this->sockets.begin(), this->sockets.end(), [](auto& pair) { pair.second.close(); });
     };
-
-    // // called when some socket needs to read received data
-    // // (i.e. on received)
-    // virtual void    on_receive(int socket) = 0;
-
-    // // called when a socket that was requesting write got writeable
-    // // (i.e. on queued send)
-    // virtual void    on_writeable(int socket) = 0;
 };
 
 UNISOCK_NAMESPACE_END

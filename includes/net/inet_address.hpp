@@ -39,15 +39,15 @@ class inet_address
         void setAddress(const std::string& hostname, const int port, const sa_family_t family = AF_INET);
 
 
-        inline std::string  getHostname() const;
+        std::string         getHostname() const;
 
-        inline std::string  getIpAddress() const;
-        inline int          getPort() const;
+        std::string         getIpAddress() const;
+        int                 getPort() const;
 
-        inline sa_family_t  getAddressFamily() const;
+        sa_family_t         getAddressFamily() const;
 
-        inline sockaddr_in  getAddress4() const;
-        inline sockaddr_in6 getAddress6() const;
+        sockaddr_in         getAddress4() const;
+        sockaddr_in6        getAddress6() const;
 
         struct sockaddr*    getAddress();
         size_t              getAddressSize() const;

@@ -61,17 +61,45 @@ class server : public unisock::server<_Data..., socket_data> //, public unisock:
             sock->data.address = { ip_address, port, family };
             ::bind(sock->getSocket(), sock->data.address.getAddress(), sock->data.address.getAddressSize());
             ::listen(sock->getSocket(), 10);
-            // this->server_type::listen();
         }
 
+    private:
         // called when some socket needs to read received data
         // (i.e. on received)
-        virtual void    on_receive(socket_wrap* socket) override
+        virtual void    on_receive(socket_wrap* s) override
         {
-            auto* client = reinterpret_cast<socket_type*>(socket);
+            auto* socket = reinterpret_cast<socket_type*>(s);
+            if (socket->data.type == connection_type::SERVER)
+            {
+                struct sockaddr_in  s_addr {};
+                socklen_t           s_len = sizeof(s_addr);
+                int client = ::accept(socket->getSocket(), reinterpret_cast<sockaddr*>(&s_addr), &s_len);
+                
+                server::socket_type* client_sock = this->make_socket(client);
+                if (client_sock == nullptr)
+                    return ;
+                client_sock->data.type = connection_type::CLIENT;
+                client_sock->data.address.setAddress(s_addr);
+                std::cout << "client connected from " << client_sock->data.address.getHostname() << " on socket " << client_sock->getSocket() << std::endl;
+            }
+            else /* if socket.data.type == connection_type::CLIENT */
+            {
+                char buffer[1024] {0};
+                int n_bytes = ::recv(socket->getSocket(), buffer, 1024, MSG_DONTWAIT);
+                if (n_bytes < 0)
+                {
+                    return ; // recv error
+                }
+                else if (n_bytes == 0)
+                {
+                    std::cout << "client disconnected from " << socket->data.address.getHostname() << " on socket " << socket->getSocket() << std::endl;
+                    // close client
+                    this->delete_socket(socket->getSocket());
+                    return ;
+                }
+                std::cout << "received from " << socket->data.address.getHostname() << " on socket " << socket->getSocket() << ": '" << std::string(buffer, n_bytes) << "'" << std::endl;
+            }
             
-            std::cout << "received on " << client->getSocket() << std::endl;
-
             // 1. if socket is a listener 
             // -> accept
             // -> create client

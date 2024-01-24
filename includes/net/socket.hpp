@@ -19,8 +19,7 @@ class socket_wrap
 
         socket_wrap(events::_lib::isocket_container* container);
         socket_wrap(events::_lib::isocket_container* container, int socket);
-
-        bool    init(const int domain, const int type, const int protocol);
+        socket_wrap(events::_lib::isocket_container* container, const int domain, const int type, const int protocol);
 
         int     getSocket() const;
 
@@ -46,6 +45,10 @@ class socket : public socket_wrap
 
         socket(events::_lib::isocket_container* container, int socket)
         : socket_wrap(container, socket)
+        {}
+
+        socket(events::_lib::isocket_container* container, const int domain, const int type, const int protocol)
+        : socket_wrap(container, domain, type, protocol)
         {}
 
     public:
