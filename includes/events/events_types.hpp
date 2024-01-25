@@ -84,9 +84,6 @@ class socket_data;
 template<handler_types S>
 class handler_impl : public handler_impl_base {};
 
-/* data creation, needs to be defined for each handler */
-template<handler_types _Handler>
-socket_data<_Handler>   make_data(int socket);
 
 /* implementation of poll, needs to be defined for each handler */
 template<handler_types _Handler>

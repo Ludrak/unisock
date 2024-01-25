@@ -13,9 +13,6 @@ UNISOCK_EVENTS_NAMESPACE_START
 
 UNISOCK_LIB_NAMESPACE_START
 
-/* */
-socket_data<handler_types::POLL>  make_data(int socket);
-
 
 /* poll implementation for poll.h */
 template<>

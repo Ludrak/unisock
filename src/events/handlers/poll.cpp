@@ -7,21 +7,14 @@ UNISOCK_EVENTS_NAMESPACE_START
 
 UNISOCK_LIB_NAMESPACE_START
 
-template<>
-socket_data<handler_types::POLL>  make_data(int socket)
-{
-    socket_data<handler_types::POLL> data;
-    data.events = POLLIN;
-    data.revents = 0;
-    data.fd = socket;
-
-    return (data);
-}
-
 
 inline void handler_impl<handler_types::POLL>::add_socket(int socket, unisock::_lib::socket_wrap* ref)
 {
-    this->sockets.push_back(_lib::make_data<handler_type>(socket));
+    struct pollfd data;
+    data.events = POLLIN;
+    data.revents = 0;
+    data.fd = socket;
+    this->sockets.push_back(data);
     this->socket_ptrs.push_back(reinterpret_cast<unisock::_lib::socket_wrap*>(ref));
 }
 
