@@ -4,6 +4,7 @@
 #include "net/inet_address.hpp"
 
 #include "events/events.hpp"
+#include "events/action_hanlder.hpp"
 
 #include <iostream>
 
@@ -20,6 +21,20 @@ enum  connection_type
     CLIENT
 };
 
+struct actions
+{
+    struct LISTEN {};
+    struct CLOSE {};
+
+    struct CONNECT {};
+    struct DISCONNECT {};
+
+    struct MESSAGE {};
+
+    struct ERROR {};
+};
+
+
 class socket_data 
 {
     public:
@@ -27,20 +42,46 @@ class socket_data
         inet_address    address;
 };
 
+
 template<typename ..._Data>
-class server : public unisock::events::_lib::socket_container<_Data..., socket_data>
+struct connection
+{
+    using type = typename unisock::events::_lib::socket_container<_Data..., socket_data>::socket_type;
+};
+
+
+
+template<typename ..._Data>
+class server :  public unisock::events::_lib::socket_container<_Data..., socket_data>,
+                public unisock::events::_lib::action_handler
+                <
+                    unisock::events::_lib::action<actions::LISTEN,  
+                                                  std::function<void ()> >,
+
+                    unisock::events::_lib::action<actions::CLOSE,  
+                                                  std::function<void ()> >,
+
+                    unisock::events::_lib::action<actions::CONNECT,
+                                                  std::function<void (typename tcp::connection<_Data...>::type& )> >,
+
+                    unisock::events::_lib::action<actions::DISCONNECT,
+                                                  std::function<void (typename tcp::connection<_Data...>::type& )> >,
+
+                    unisock::events::_lib::action<actions::MESSAGE,  
+                                                  std::function<void (typename tcp::connection<_Data...>::type&, const char *, size_t)> >
+                >
 {
         using container_type = typename unisock::events::_lib::socket_container<_Data..., socket_data>;
 
     public:
-        using connection = typename container_type::socket_type;
+        using connection = typename tcp::connection<_Data...>::type;
 
         server()
         : container_type()
         {
         }
 
-        server(events::handler& handler)
+        server(unisock::events::handler& handler)
         : container_type(handler)
         {
         }
@@ -55,6 +96,8 @@ class server : public unisock::events::_lib::socket_container<_Data..., socket_d
             sock->data.address = { ip_address, port, family };
             ::bind(sock->getSocket(), sock->data.address.getAddress(), sock->data.address.getAddressSize());
             ::listen(sock->getSocket(), 10);
+
+            this->template execute<actions::LISTEN>();
         }
 
     private:
@@ -74,7 +117,8 @@ class server : public unisock::events::_lib::socket_container<_Data..., socket_d
                     return ;
                 client_sock->data.type = connection_type::CLIENT;
                 client_sock->data.address.setAddress(s_addr);
-                std::cout << "client connected from " << client_sock->data.address.getHostname() << " on socket " << client_sock->getSocket() << std::endl;
+
+                this->template execute<actions::CONNECT>(static_cast<connection&>(*client_sock));
             }
             else /* if socket.data.type == connection_type::CLIENT */
             {
@@ -86,13 +130,13 @@ class server : public unisock::events::_lib::socket_container<_Data..., socket_d
                 }
                 else if (n_bytes == 0)
                 {
-                    std::cout << "client disconnected from " << socket->data.address.getHostname() << " on socket " << socket->getSocket() << std::endl;
+                    this->template execute<actions::DISCONNECT>(static_cast<connection&>(*socket));
                     // close client
                     this->delete_socket(socket->getSocket());
                     return ;
                 }
                 // received n_bytes in buffer
-                std::cout << "received from " << socket->data.address.getHostname() << " on socket " << socket->getSocket() << ": '" << std::string(buffer, n_bytes) << "'" << std::endl;
+                this->template execute<actions::MESSAGE>(static_cast<connection&>(*socket), buffer, n_bytes);
             }
         }
 
