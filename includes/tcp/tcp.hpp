@@ -35,7 +35,11 @@ class server : public unisock::_lib::server<_Data..., socket_data> //, public un
         using server_type = typename unisock::_lib::server<_Data..., socket_data>;
         using socket_type = typename server_type::socket_type;
 
-        server() = delete;
+        server()
+        : unisock::_lib::server<_Data..., socket_data>()
+        {
+        }
+
         server(events::handler& handler)
         : unisock::_lib::server<_Data..., socket_data>(handler)
         {

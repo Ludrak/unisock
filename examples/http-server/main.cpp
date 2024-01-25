@@ -49,11 +49,10 @@ int main()
     //     s2.close();
     // }
 
-    // /* one servers with multiple connections on one handler */
+    // /* one servers with multiple connections on one handler (implicit handler since not specified in constructor of server) */
     // /* optimized for polling lots of connection from one server */
     {
-        events::handler handler { };
-        tcp::server<> server { handler };
+        tcp::server<> server { };
 
         server.listen("127.0.0.1", 1000);
         server.listen("127.0.0.1", 2000);

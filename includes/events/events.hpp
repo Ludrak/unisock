@@ -70,12 +70,22 @@ class socket_container : public isocket_container
         using socket_type = unisock::_lib::socket<_Data...>;
         using poll_data = unisock::events::_lib::socket_data<unisock::events::handler_type>;
 
-        socket_container() = delete;
-        socket_container(handler& handler)
-        : handler(handler)
+        /* implicitly creating an handler for this server, */
+        /* the handler, in this case must be on the heap   */
+        socket_container()
+        : handler(*(new events::handler())), self_handled(true)
         {}
 
-        virtual ~socket_container() = default;
+        socket_container(handler& handler)
+        : handler(handler), self_handled(false)
+        {}
+
+        /* destroying the eventual implicitly allocated handler */
+        virtual ~socket_container()
+        {
+            if (self_handled)
+                delete &handler;
+        }
         
     protected:
         template<typename ..._Args>
@@ -99,6 +109,7 @@ class socket_container : public isocket_container
 
         std::map<int, socket_type>  sockets;
         handler&                    handler;
+        bool                        self_handled;
 
         friend class unisock::events::handler;
         friend void  unisock::events::poll(socket_container<_Data...>&);

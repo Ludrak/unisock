@@ -14,7 +14,9 @@ public:
     using container_type = unisock::events::_lib::socket_container<_Data...>;
     using socket_type = typename container_type::socket_type;
     
-    server() = delete;
+    server()
+    : unisock::events::_lib::socket_container<_Data...>()
+    {}
 
     server(events::handler& handler)
     : unisock::events::_lib::socket_container<_Data...>(handler)
