@@ -2,7 +2,6 @@
 
 #include "net/socket.hpp"
 #include "net/inet_address.hpp"
-#include "net/server.hpp"
 
 #include "events/events.hpp"
 
@@ -29,30 +28,27 @@ class socket_data
 };
 
 template<typename ..._Data>
-class server : public unisock::_lib::server<_Data..., socket_data> //, public unisock::inet_address
+class server : public unisock::events::_lib::socket_container<_Data..., socket_data>
 {
+        using container_type = typename unisock::events::_lib::socket_container<_Data..., socket_data>;
+
     public:
-        using server_type = typename unisock::_lib::server<_Data..., socket_data>;
-        using socket_type = typename server_type::socket_type;
+        using connection = typename container_type::socket_type;
 
         server()
-        : unisock::_lib::server<_Data..., socket_data>()
+        : container_type()
         {
         }
 
         server(events::handler& handler)
-        : unisock::_lib::server<_Data..., socket_data>(handler)
+        : container_type(handler)
         {
         }
-
-    private:
-        /* putting inherited listen() in private to replace it with new version */
-        void listen() override {}
 
     public:
         virtual void listen(const std::string& ip_address, const int port, const sa_family_t family = AF_INET)
         {
-            server::socket_type* sock = this->make_socket(family, SOCK_STREAM, 0);
+            server::connection* sock = this->make_socket(family, SOCK_STREAM, 0);
             if (sock == nullptr)
                 return ;
             sock->data.type = connection_type::SERVER;
@@ -66,14 +62,14 @@ class server : public unisock::_lib::server<_Data..., socket_data> //, public un
         // (i.e. on received)
         virtual void    on_receive(unisock::_lib::socket_wrap* s) override
         {
-            auto* socket = reinterpret_cast<socket_type*>(s);
+            auto* socket = reinterpret_cast<connection*>(s);
             if (socket->data.type == connection_type::SERVER)
             {
                 struct sockaddr_in  s_addr {};
                 socklen_t           s_len = sizeof(s_addr);
                 int client = ::accept(socket->getSocket(), reinterpret_cast<sockaddr*>(&s_addr), &s_len);
                 
-                server::socket_type* client_sock = this->make_socket(client);
+                server::connection* client_sock = this->make_socket(client);
                 if (client_sock == nullptr)
                     return ;
                 client_sock->data.type = connection_type::CLIENT;

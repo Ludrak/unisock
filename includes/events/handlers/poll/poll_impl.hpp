@@ -21,8 +21,6 @@ socket_data<handler_types::POLL>  make_data(int socket);
 template<>
 void    poll_impl<handler_types::POLL>(handler& handler)
 {
-    (void)handler;
-
     int n_changes = poll(reinterpret_cast<pollfd*>(handler.sockets.data()), handler.sockets.size(), -1);
     for (auto it = handler.sockets.begin(); it != handler.sockets.end(); ++it)
     {

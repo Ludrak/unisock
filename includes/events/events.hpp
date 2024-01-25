@@ -86,6 +86,13 @@ class socket_container : public isocket_container
             if (self_handled)
                 delete &handler;
         }
+
+        /* closes all sockets properly, MUST be called if inherited ! */
+        virtual void    close()
+        {
+            while (this->sockets.size() > 0)
+                this->delete_socket(this->sockets.begin()->second.getSocket());
+        }
         
     protected:
         template<typename ..._Args>
