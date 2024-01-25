@@ -12,21 +12,13 @@ UNISOCK_LIB_NAMESPACE_START
 
 
 
-struct _empty_function
-{
-    template<class T>
-    operator std::function<T>()
-    { return [](auto&&...){}; }
-}      empty_function;
-
-
-
 template<typename _Action, typename _Function>
 struct action
 {
     using type = _Action;
     using function = _Function;
 
+    /* empty function for default constructor */
     struct _empty
     {
         operator _Function()
@@ -71,7 +63,7 @@ class action_handler
             using type = void;
         };
 
-        // head type of actions is same as _Atype, define type of action in ::type, stop inheriting (loop)
+        // head type of actions is same as _Atype, define type of action in ::type
         template <typename _Atype, typename _Afunc, typename... _Aargs>
         struct get_action<_Atype, action<_Atype, _Afunc>, _Aargs...>
         {
@@ -103,6 +95,7 @@ class action_handler
             std::get<action_type>(actions) = { static_cast<typename action_type::function>(function) };
         }
 
+    protected:
         template<typename _ActionType, typename ..._Args>
         constexpr void    execute(_Args&&... args)
         {
@@ -116,7 +109,6 @@ class action_handler
             std::get<action_type>(actions).execute(std::forward<_Args>(args)...);
         }
 
-    protected:
         std::tuple<_Actions...> actions;
 };
 

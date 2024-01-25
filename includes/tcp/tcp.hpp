@@ -21,16 +21,32 @@ enum  connection_type
     CLIENT
 };
 
-struct actions
+
+// actions to be hooked to tcp server/client with .on(lambda())
+namespace actions
 {
+    // server started listening
+    // prototype: void  (void);
     struct LISTEN {};
+
+    // server closed
+    // prototype: void  (void);
     struct CLOSE {};
 
+    // a client connected on some endpoint of the server
+    // prototype: void  (tcp::connection<data>& client);
     struct CONNECT {};
+
+    // a client disconnected from the server
+    // prototype: void  (tcp::connection<data>& client);
     struct DISCONNECT {};
 
+    // a client sent a tcp message to the server
+    // prototype: void  (tcp::connection<data>& client, const char* message, const size_t size);
     struct MESSAGE {};
 
+    // an error has occurred 
+    // prototype: void  (int errno);
     struct ERROR {};
 };
 
@@ -86,7 +102,7 @@ class server :  public unisock::events::_lib::socket_container<_Data..., socket_
         {
         }
 
-    public:
+
         virtual void listen(const std::string& ip_address, const int port, const sa_family_t family = AF_INET)
         {
             server::connection* sock = this->make_socket(family, SOCK_STREAM, 0);
@@ -99,6 +115,7 @@ class server :  public unisock::events::_lib::socket_container<_Data..., socket_
 
             this->template execute<actions::LISTEN>();
         }
+
 
     private:
         // called when some socket needs to read received data
@@ -140,6 +157,7 @@ class server :  public unisock::events::_lib::socket_container<_Data..., socket_
             }
         }
 
+
         // called when a socket that was requesting write got writeable
         // (i.e. on queued send)
         virtual void    on_writeable(unisock::_lib::socket_wrap* socket) override
@@ -148,7 +166,6 @@ class server :  public unisock::events::_lib::socket_container<_Data..., socket_
             // send queued data if any
         }
     
-    private:
 };
 
 

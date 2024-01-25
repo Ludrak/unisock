@@ -17,6 +17,8 @@ UNISOCK_EVENTS_NAMESPACE_START
 
 UNISOCK_LIB_NAMESPACE_START
 
+// class handler;
+
 class isocket_container
 {
     public:
