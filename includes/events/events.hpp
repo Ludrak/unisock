@@ -21,11 +21,6 @@ UNISOCK_NAMESPACE_START
 UNISOCK_EVENTS_NAMESPACE_START
 
 
-/* poll on selected handler type */
-void                    poll(handler& handler);
-
-
-
 /* handles a group of socket for one or multiple socket_container */
 /* the container needs to subscribe itself to the handler */
 class handler : public _lib::handler_impl<unisock::events::handler_type>
@@ -52,6 +47,19 @@ UNISOCK_LIB_NAMESPACE_START
 
 
 #include "socket_container.hpp"
+
+/* predefinition for poll(socket_container<...>&)*/
+template<typename ..._Data>
+class socket_container;
+
+
+UNISOCK_LIB_NAMESPACE_END
+
+/* predefinition for socket_container */
+template<typename ..._Data>
+void                    poll(_lib::socket_container<_Data...>& container);
+
+UNISOCK_LIB_NAMESPACE_START
 
 /* contains sockets, can be attached to a handler to poll on those socket 
    a handler needs to be attached to create a socket                      */
@@ -93,6 +101,7 @@ class socket_container : public isocket_container
         handler&                    handler;
 
         friend class unisock::events::handler;
+        friend void  unisock::events::poll(socket_container<_Data...>&);
 };
 
 
@@ -108,9 +117,6 @@ UNISOCK_NAMESPACE_END
 /* include correct poll() implementations here */
 #include "events/handlers/poll/poll_impl.hpp"
 
-// #include "events/handler.hpp"
-// #include "events/socket_container.hpp"
-
 
 UNISOCK_NAMESPACE_START
 
@@ -120,6 +126,13 @@ UNISOCK_EVENTS_NAMESPACE_START
 void                    poll(handler& handler)
 {
     unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler);
+}
+
+/* poll on single socket_container handler type */
+template<typename ..._Data>
+void                    poll(_lib::socket_container<_Data...>& container)
+{
+    unisock::events::_lib::poll_impl<unisock::events::handler_type>(container.handler);
 }
 
 UNISOCK_EVENTS_NAMESPACE_END

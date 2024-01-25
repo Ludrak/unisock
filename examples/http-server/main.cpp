@@ -16,38 +16,38 @@ class client_data
 int main()
 {
 
-    /* basic server */
-    /* single server, single connection */
-    {
-        events::handler handler {  };
+    // /* basic server */
+    // /* single server, single connection */
+    // {
+    //     events::handler handler {  };
 
-        tcp::server<client_data> server { handler };
+    //     tcp::server<client_data> server { handler };
 
-        server.listen("127.0.0.1", 9000);
+    //     server.listen("127.0.0.1", 9000);
 
-        for (int i = 0; i < 10; ++i)
-            events::poll(handler);
+    //     for (int i = 0; i < 10; ++i)
+    //         events::poll(handler);
 
-        server.close();
-    }
+    //     server.close();
+    // }
 
 
-    // /* multiple servers on one handler (with different client data types)*/
-    // /* optimized for few, but bigger servers, allows for different server types to be polled together (even with different protocol types)*/
-    {
-        events::handler handler {};
+    // // /* multiple servers on one handler (with different client data types)*/
+    // // /* optimized for few, but bigger servers, allows for different server types to be polled together (even with different protocol types)*/
+    // {
+    //     events::handler handler {};
 
-        tcp::server<client_data> s1 { handler };
-        tcp::server<> s2 { handler };
+    //     tcp::server<client_data> s1 { handler };
+    //     tcp::server<> s2 { handler };
 
-        s1.listen("127.0.0.1", 9000);
-        s2.listen("127.0.0.1", 8000);
+    //     s1.listen("127.0.0.1", 9000);
+    //     s2.listen("127.0.0.1", 8000);
 
-        events::poll(handler);
+    //     events::poll(handler);
 
-        s1.close();
-        s2.close();
-    }
+    //     s1.close();
+    //     s2.close();
+    // }
 
     // /* one servers with multiple connections on one handler */
     // /* optimized for polling lots of connection from one server */
@@ -61,7 +61,7 @@ int main()
         server.listen("127.0.0.1", 4000);
         server.listen("127.0.0.1", 5000);
         
-        events::poll(handler);
+        events::poll(server);
 
         server.close();
     }
