@@ -20,7 +20,7 @@ UNISOCK_LIB_NAMESPACE_START
 class isocket_container
 {
     public:
-        isocket_container() = default;
+        virtual ~isocket_container() = default;
 
         // called when a socket contains some data to be read
         virtual void    on_receive(unisock::_lib::socket_wrap* socket_ptr) = 0;

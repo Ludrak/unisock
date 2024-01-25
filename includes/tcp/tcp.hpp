@@ -5,7 +5,6 @@
 #include "net/server.hpp"
 
 #include "events/events.hpp"
-#include "unisock.hpp"
 
 #include <iostream>
 
@@ -92,6 +91,7 @@ class server : public unisock::_lib::server<_Data..., socket_data> //, public un
                     this->delete_socket(socket->getSocket());
                     return ;
                 }
+                // received n_bytes in buffer
                 std::cout << "received from " << socket->data.address.getHostname() << " on socket " << socket->getSocket() << ": '" << std::string(buffer, n_bytes) << "'" << std::endl;
             }
         }

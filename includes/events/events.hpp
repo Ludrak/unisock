@@ -7,77 +7,18 @@
 
 #include "namespaces.hpp"
 #include "net/socket.hpp"
+
+#include "events/events_types.hpp"
 //#include <iostream>
+
+
+/* include handler implementations */
+#include "events/handlers/poll/handler_impl.hpp"
+
 
 UNISOCK_NAMESPACE_START
 
 UNISOCK_EVENTS_NAMESPACE_START
-
-
-UNISOCK_LIB_NAMESPACE_START
-
-/* predefinition of socket_container */
-template<typename ..._Data>
-class socket_container;
-
-UNISOCK_LIB_NAMESPACE_END
-
-
-/* predefinition of handler */
-class handler;
-
-/* handler types enum */
-enum  handler_types
-{
-    POLL,
-    EPOLL,
-    KQUEUE,
-    SELECT
-};
-
-/* select poll handler */
-#ifndef USE_POLL_HANDLER
-
-# if     defined(__LINUX__)
-#  define _POLL_HANDLER handler_types::EPOLL
-
-# elif   defined(__APPLE__) || defined(__NetBSD__) || defined(__FreeBSD__)
-#  define _POLL_HANDLER handler_types::POLL
-//#  include "events/poll.hpp"
-
-// # elif   defined(__WIN32__) || defined(__WIN64__)
-// #  define _POLL_HANDLER handler_types::POLL
-
-# else
-#  warning "could not retrieve system os for selecting poll handler (see "__FILENAME__":"__LINE__"), setting default to select() (select.h)"
-#  define _POLL_HANDLER handler_types::SELECT
-
-# endif
-
-#else
-# define _POLL_HANDLER USE_POLL_HANDLER
-#endif
-
-/* selected poll handler */
-static constexpr handler_types handler_type = _POLL_HANDLER;
-
-
-UNISOCK_LIB_NAMESPACE_START
-
-/* templates to be specialized for each SockHandler type*/
-template<handler_types S>
-class socket_data;
-
-/* data creation, needs to be defined for each handler */
-template<handler_types _Handler>
-socket_data<_Handler>   make_data(int socket);
-
-/* implementation of poll, needs to be defined for each handler */
-template<handler_types _Handler>
-void                    poll_impl(handler& handler);
-
-UNISOCK_LIB_NAMESPACE_END
-
 
 
 /* poll on selected handler type */
@@ -85,41 +26,21 @@ void                    poll(handler& handler);
 
 
 
-
 /* handles a group of socket for one or multiple socket_container */
 /* the container needs to subscribe itself to the handler */
-class handler
+class handler : public _lib::handler_impl<unisock::events::handler_type>
 {
     public:
         handler() = default;
         ~handler() = default;
 
-        // template<typename ..._Data>
-        // handler(_lib::socket_container<_Data...>& container);
-
-        // template<typename _InputIterator>
-        // handler(_InputIterator begin, _InputIterator end,
-        // typename std::enable_if<
-        //             std::is_base_of<
-        //                 handler,
-        //                 typename _InputIterator::value_type>::value,
-        //             int
-        //         >::type = 0)
-        // {
-        //     std::for_each(begin, end, [&](auto& container) { subscribe(container); });
-        // }
-
-        // template<typename ..._Data>
-        // void    subscribe(_lib::socket_container<_Data...>& container);
-
         template<typename ..._Data>
-        void    _add_socket(int socket, unisock::_lib::socket<_Data...>* ref);
-        void    _del_socket(int socket);
+        void    add_socket(int socket, unisock::_lib::socket<_Data...>* ref)
+        {
+            this->handler_impl::add_socket(socket, reinterpret_cast<unisock::_lib::socket_wrap*>(ref));
+        }
     
     private:
-
-        std::vector<_lib::socket_data<unisock::events::handler_type>> sockets;
-        std::vector<unisock::_lib::socket_wrap*>                      socket_ptrs;
 
         friend void unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler&);
 };
@@ -156,13 +77,13 @@ class socket_container : public isocket_container
             auto insert = this->sockets.insert(std::make_pair(sock.getSocket(), sock));
             if (!insert.second)
                 return nullptr; // insert error
-            this->handler._add_socket(sock.getSocket(), &insert.first->second);
+            this->handler.add_socket(sock.getSocket(), &insert.first->second);
             return (&insert.first->second);
         }
 
         void            delete_socket(int socket)
         {
-            this->handler._del_socket(socket);
+            this->handler.del_socket(socket);
             this->sockets.erase(socket);
             ::close(socket);
         }
@@ -184,11 +105,11 @@ UNISOCK_NAMESPACE_END
 
 #define _EVENTS_DEF
 
-/* include correct poll handler here */
-#include "events/poll.hpp"
+/* include correct poll() implementations here */
+#include "events/handlers/poll/poll_impl.hpp"
 
-#include "events/handler.hpp"
-#include "events/socket_container.hpp"
+// #include "events/handler.hpp"
+// #include "events/socket_container.hpp"
 
 
 UNISOCK_NAMESPACE_START

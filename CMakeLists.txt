@@ -49,6 +49,9 @@ add_library(cppsockets STATIC
 	# library source here
 	src/net/inet_address.cpp
 	src/net/socket.cpp
+
+	# socket handlers
+	src/events/handlers/poll.cpp
 )
 
 
