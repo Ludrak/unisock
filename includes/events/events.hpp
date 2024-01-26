@@ -30,14 +30,14 @@ class handler : public _lib::handler_impl<unisock::events::handler_type>
         ~handler() = default;
 
         template<typename ..._Data>
-        void    add_socket(int socket, unisock::_lib::socket<_Data...>* ref)
+        void    add_socket(int socket, unisock::_lib::socket<_Data...>* sptr)
         {
-            this->handler_impl::add_socket(socket, reinterpret_cast<unisock::_lib::socket_wrap*>(ref));
+            this->handler_impl::add_socket(socket, reinterpret_cast<unisock::_lib::socket_wrap*>(sptr));
         }
     
     private:
 
-        friend void unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler&);
+        friend void unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler&, int);
 };
 
 
@@ -57,7 +57,7 @@ UNISOCK_LIB_NAMESPACE_END
 
 /* predefinition for socket_container */
 template<typename ..._Data>
-void                    poll(_lib::socket_container<_Data...>& container);
+void                    poll(_lib::socket_container<_Data...>& container, int timeout = -1);
 
 UNISOCK_LIB_NAMESPACE_START
 
@@ -119,7 +119,7 @@ class socket_container : public isocket_container
         bool                        self_handled;
 
         friend class unisock::events::handler;
-        friend void  unisock::events::poll(socket_container<_Data...>&);
+        friend void  unisock::events::poll(socket_container<_Data...>&, int);
 };
 
 
@@ -140,17 +140,24 @@ UNISOCK_NAMESPACE_START
 
 UNISOCK_EVENTS_NAMESPACE_START
 
-/* poll on selected handler type */
-void                    poll(handler& handler)
+/* poll events on selected handler type */
+void                    poll(handler& handler, int timeout = -1)
 {
-    unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler);
+    unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler, timeout);
 }
 
-/* poll on single socket_container handler type */
+/* poll events on single socket_container (server/client) */
 template<typename ..._Data>
-void                    poll(_lib::socket_container<_Data...>& container)
+void                    poll(_lib::socket_container<_Data...>& container, int timeout)
 {
-    unisock::events::_lib::poll_impl<unisock::events::handler_type>(container.handler);
+    unisock::events::_lib::poll_impl<unisock::events::handler_type>(container.handler, timeout);
+}
+
+// /* poll on single sockets without handeling callback events, 
+//    returns true if all events specified where polled        */
+bool                    single_poll(const unisock::_lib::socket_wrap& socket, int events, int timeout = -1)
+{
+    return unisock::events::_lib::single_poll_impl<unisock::events::handler_type>(socket, events, timeout);
 }
 
 UNISOCK_EVENTS_NAMESPACE_END

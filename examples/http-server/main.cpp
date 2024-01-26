@@ -34,7 +34,7 @@ int main()
         );
 
         server.on<CONNECT>(
-            [](tcp::connection<client_data>::type& connection) {
+            [](tcp::connection<client_data>& connection) {
                 std::cout << "client connected from " << connection.data.address.getHostname() << " on socket " << connection.getSocket() << std::endl;
             }
         ); 
@@ -46,8 +46,9 @@ int main()
         );
 
         server.on<MESSAGE>(
-            [](auto& connection, const char* message, const size_t bytes) {
+            [&server](auto& connection, const char* message, const size_t bytes) {
                 std::cout << "received from " << connection.data.address.getHostname() << ": '" << std::string(message, bytes) << "'" <<  std::endl;
+                server.send(connection, "Hey !");
             }
         );
 

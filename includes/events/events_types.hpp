@@ -87,7 +87,12 @@ class handler_impl : public handler_impl_base {};
 
 /* implementation of poll, needs to be defined for each handler */
 template<handler_types _Handler>
-void                    poll_impl(handler& handler);
+void                    poll_impl(handler& handler, int timeout);
+
+/* poll on single sockets without handeling callback events, 
+   returns true if all events specified where polled        */
+template<handler_types _Handler>
+bool                    single_poll_impl(const unisock::_lib::socket_wrap& socket, int events, int timeout);
 
 
 UNISOCK_LIB_NAMESPACE_END

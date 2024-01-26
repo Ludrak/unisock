@@ -16,9 +16,9 @@ UNISOCK_LIB_NAMESPACE_START
 
 /* poll implementation for poll.h */
 template<>
-void    poll_impl<handler_types::POLL>(handler& handler)
+void    poll_impl<handler_types::POLL>(handler& handler, int timeout)
 {
-    int n_changes = poll(reinterpret_cast<pollfd*>(handler.sockets.data()), handler.sockets.size(), -1);
+    int n_changes = poll(reinterpret_cast<pollfd*>(handler.sockets.data()), handler.sockets.size(), timeout);
     for (auto it = handler.sockets.begin(); it != handler.sockets.end(); ++it)
     {
         auto& socket = *it;
@@ -43,6 +43,29 @@ void    poll_impl<handler_types::POLL>(handler& handler)
         if (n_changes == 0)
             break;
     }
+}
+
+static constexpr int    WANT_READ = POLLIN;
+static constexpr int    WANT_WRITE = POLLOUT;
+
+/* single poll, poll on a single socket, return true if poll set all events set in events bitwise selector */
+template<>
+bool    single_poll_impl<handler_types::POLL>(const unisock::_lib::socket_wrap& socket, int events, int timeout)
+{
+    struct pollfd poll_data;
+    poll_data.events = events;
+    poll_data.revents = 0;
+    poll_data.fd = socket.getSocket();
+
+    int n_changes = ::poll(&poll_data, 1, timeout);
+
+    if (n_changes == 0)
+        return (false);
+
+    if (poll_data.revents & events)
+        return (true);
+    
+    return (false);
 }
 
 UNISOCK_LIB_NAMESPACE_END
