@@ -87,6 +87,27 @@ class socket_container : public isocket_container
                 delete &handler;
         }
 
+        /* finds a socket in the list depending on socket*/
+        socket_type *find(int socket)
+        {
+            auto it = this->sockets.find(socket);
+            if (it == this->sockets.end())
+                return (nullptr);
+            return (&it->second);
+        }
+
+        /* finds a socket in the list depending on unary predicate */
+        template<class _Function>
+        socket_type *find(_Function predicate)
+        {
+            auto it = std::find_if(this->sockets.begin(), this->sockets.end(),
+                        [&predicate](auto& pair){ return predicate(pair.second); });
+
+            if (it == this->sockets.end())
+                return (nullptr);
+            return (&it->second);
+        }
+
         /* closes all sockets properly, MUST be called if inherited ! */
         virtual void    close()
         {

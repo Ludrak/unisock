@@ -30,14 +30,10 @@ struct action
     : execute(empty_function)
     {}
 
-    /* constructor with a function reference */
-    action(const function& f)
-    : execute(f)
-    {}
-
-    action<_Action, _Function>& operator=(const action<_Action, _Function>& other)
+    /* operator= to set function */
+    action<_Action, _Function>& operator=(const function& func)
     {
-        this->execute = other.execute;
+        this->execute = func;
         return (*this);
     }
 
@@ -92,7 +88,7 @@ class action_handler
                             _Function
                         >::value, "invalid function handler for action");
 
-            std::get<action_type>(actions) = { static_cast<typename action_type::function>(function) };
+            std::get<action_type>(actions) = static_cast<typename action_type::function>(function);
         }
 
     protected:
