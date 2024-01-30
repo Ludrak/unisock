@@ -25,10 +25,12 @@ class isocket_container
         virtual ~isocket_container() = default;
 
         // called when a socket contains some data to be read
-        virtual void    on_receive(unisock::_lib::socket_wrap* socket_ptr) = 0;
+        // should return true if iterators of the sockets map are invalidated
+        virtual bool    on_receive(unisock::_lib::socket_wrap* socket_ptr) = 0;
         
         // called when a socket is writeable
-        virtual void    on_writeable(unisock::_lib::socket_wrap* socket_ptr) = 0;    
+        // should return true if iterators of the sockets map are invalidate
+        virtual bool    on_writeable(unisock::_lib::socket_wrap* socket_ptr) = 0;    
 };
 
 UNISOCK_LIB_NAMESPACE_END

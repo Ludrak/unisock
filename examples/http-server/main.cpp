@@ -21,9 +21,15 @@ int main()
         
         using namespace tcp::actions;
 
+        server.on<ERROR>(
+            [](const std::string& function, int error) {
+                std::cout << "error occurred: " << function << ": " << strerror(error) << std::endl;
+            }
+        );
+
         server.on<LISTEN>(
-            []() {
-                std::cout << "listening" << std::endl;
+            [](tcp::connection<client_data>& connection) {
+                std::cout << "listening on " << connection.data.address.getIpAddress() << ":" << connection.data.address.getPort() << std::endl;
             }
         );
 
@@ -49,14 +55,31 @@ int main()
             [&server](auto& connection, const char* message, const size_t bytes) {
                 std::cout << "received from " << connection.data.address.getHostname() << ": '" << std::string(message, bytes) << "'" <<  std::endl;
                 server.send(connection, "Hey !");
+
+                // auto* client = server.find([](auto& client) { return (client.data.address.getIpAddress() == "127.0.0.1"); });
+                // if (client)
+                //     server.send(*client, "you are on 127.0.0.1\n");
             }
         );
 
         // start listening, can throw for many reasons (bad ip, bad connection, unable to create socket, etc...)
-        server.listen("127.0.0.1", 9000);
+        if (!server.listen("127.0.0.1", 9000))
+            return (1);
+    
 
-        for (int i = 0; i < 10; ++i)
+        server.listen("127.0.0.1", 1000);
+        server.listen("127.0.0.1", 2000);
+        server.listen("127.0.0.1", 3000);
+        server.listen("127.0.0.1", 4000);
+        server.listen("127.0.0.1", 5000);
+
+        // TODO: should poll until there is no socket left to poll in handler
+        // while ( events::poll(server) )
+        //     ;
+
+        while ( 1 )
             events::poll(server);
+        
 
         server.close();
     }
