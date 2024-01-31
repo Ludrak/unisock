@@ -43,6 +43,7 @@ struct action
 
 
 
+/* action handler with parameter pack template */
 template<typename ..._Actions>
 class action_handler
 {
@@ -106,6 +107,30 @@ class action_handler
         }
 
         std::tuple<_Actions...> actions;
+};
+
+
+UNISOCK_LIB_NAMESPACE_START
+
+/* expand tuple to parameter pack util */
+template<typename _Tuple, template<typename...> class T>
+struct expand;
+
+template<template<typename...> class T, typename... _Args>
+struct expand<std::tuple<_Args...>, T>
+{
+    using type = T<_Args...>;
+};
+
+UNISOCK_LIB_NAMESPACE_END
+
+
+/* action handler with tuple template */
+template<typename ..._Args>
+class action_handler<std::tuple<_Args...>> : public _lib::expand<std::tuple<_Args...>, action_handler>::type
+{
+    public:
+        action_handler() = default;
 };
 
 

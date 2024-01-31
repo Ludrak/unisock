@@ -11,64 +11,44 @@
 
 UNISOCK_NAMESPACE_START
 
-#define MAX_HOST_RESOLVE_RETRIES 3
-#define MAX_HOSTNAME_LEN         255
 
 class inet_address
 {
     public:
+        static constexpr size_t ADDRESS_SIZE = 32;
+
+        static constexpr size_t IP_ADDRESS_BUFFER_SIZE = 255;
+
+        static constexpr size_t HOSTNAME_BUFFER_SIZE = 255;
+        static constexpr size_t MAX_HOST_RESOLVE_RETRIES = 3;
+
+        // Constructs an empty address (i.e. before accepting client)
         inet_address();
+        inet_address(const inet_address& other);
 
-        // constructs from IPv4 addr (i.e. on connection accepted)
-        inet_address(const struct sockaddr_in& addr);
-
-        // constructs from IPv6 addr (i.e. on connection accepted)
-        inet_address(const struct sockaddr_in6& addr);
+        inet_address(const char* address_data, const size_t address_size);
 
         // Constructs a new sockaddr depending on family (i.e. for initialisation of struct sockaddr)
         inet_address(const std::string& hostname, const int port, const sa_family_t family = AF_INET);
 
-
-        // constructs from IPv4 addr (i.e. on connection accepted)
-        void setAddress(const struct sockaddr_in& addr);
-
-        // constructs from IPv6 addr (i.e. on connection accepted)
-        void setAddress(const struct sockaddr_in6& addr);
-
-        // Constructs a new sockaddr depending on family (i.e. for initialisation of struct sockaddr)
-        void setAddress(const std::string& hostname, const int port, const sa_family_t family = AF_INET);
+        inet_address&   operator=(const inet_address& other);
 
 
-        std::string         getHostname() const;
+        std::string         hostname() const;
+        std::string         ip() const;
 
-        std::string         getIpAddress() const;
-        int                 getPort() const;
+        int                 port() const;
+        size_t              size() const;
+        sa_family_t         family() const;
 
-        sa_family_t         getAddressFamily() const;
-
-        sockaddr_in         getAddress4() const;
-        sockaddr_in6        getAddress6() const;
-
-        struct sockaddr*    getAddress();
-        size_t              getAddressSize() const;
-    
-
-    private:
-        void        _get_addr_by_hostname(sockaddr *const addr, const socklen_t addr_len, std::string& ip_address, const std::string &hostname, const sa_family_t host_family);
-        std::string _get_hostname_of_addr(const struct sockaddr* addr, const socklen_t addr_len);
-        std::string _get_ip_of_addr4(const struct in_addr& addr);
-        std::string _get_ip_of_addr6(const struct in6_addr& addr);
+        template<typename T>
+        const T*            to_address() const
+        {
+            return (reinterpret_cast<const T*>(this->_address));
+        }
 
     protected:
-        // hostname, ip, and port, from sockaddr structs
-        std::string _hostname;
-        std::string _ip_address;
-        in_port_t   _port;
-
-        // actual addr structs, _address_family indicates the current one
-        struct sockaddr_in  _address_4;
-        struct sockaddr_in6 _address_6;
-        sa_family_t         _address_family;
+        char                _address[ADDRESS_SIZE];
 };
 
 UNISOCK_NAMESPACE_END

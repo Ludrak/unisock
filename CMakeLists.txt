@@ -76,5 +76,11 @@ if (build-examples)
 	)
 	target_link_libraries(tcp-client cppsockets)
 
+	# Basic udp server
+	add_executable(udp-server
+		examples/udp-server/main.cpp
+	)
+	target_link_libraries(udp-server cppsockets)
+
 endif(build-examples)
 

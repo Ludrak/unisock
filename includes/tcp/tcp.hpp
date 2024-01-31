@@ -70,10 +70,6 @@ namespace actions
     //  client: N/A
     struct DISCONNECT {};
 
-    // a client sent a tcp message to the server
-    // prototype: void  (tcp::connection<data>& client, const char* message, const size_t size);
-
-
     //  server: 
     //      server received data from a client
     //      prototype: void  (tcp::connection<data>& client, const char* message, const size_t size);
@@ -121,46 +117,47 @@ class socket_data
 
 UNISOCK_LIB_NAMESPACE_END
 
+
 /* connection type for tcp server/client with data */
 template<typename ..._Data>
 using connection = typename unisock::_lib::socket<_Data..., _lib::socket_data<_Data...>>;
 
+
 UNISOCK_LIB_NAMESPACE_START
 
+/* common actions for both client and server */
+template<typename _Connection, typename ..._Actions>
+using common_actions = std::tuple<
+    // close handler:       void ()
+    unisock::events::_lib::action<actions::ERROR,  
+                                std::function<void (const std::string&, int)> >,
 
+    // close handler:       void (tcp::connection<...>& connection)
+    unisock::events::_lib::action<actions::CLOSED,  
+                                std::function<void (_Connection&)> >,
 
-/* expand tuple to parameter pack util, TODO: move this in some util file */
-template<typename _Tuple, template<typename...> class T>
-struct expand;
+    // message handler:     void (tcp::connection<...>& client, const char* message, size_t size)
+    unisock::events::_lib::action<actions::MESSAGE,  
+                                std::function<void (_Connection&, const char *, size_t)> >,
 
-template<template<typename...> class T, typename... _Args>
-struct expand<std::tuple<_Args...>, T>
-{
-    using type = T<_Args...>;
-};
-
+    _Actions...
+>;
 
 
 /* inherited socket container which regroup common server/client tcp operations,
    defines a common base for server/client                                        */
 template<typename ..._Actions, typename ..._Data>
 class socket_container<std::tuple<_Actions...>, _Data...>
-                       :    public unisock::events::_lib::socket_container<_Data..., _lib::socket_data<_Data...>>,
-                            public expand<std::tuple<
-                                // close handler:       void ()
-                                unisock::events::_lib::action<actions::ERROR,  
-                                                            std::function<void (const std::string&, int)> >,
-
-                                // close handler:       void (tcp::connection<...>& connection)
-                                unisock::events::_lib::action<actions::CLOSED,  
-                                                            std::function<void (typename tcp::connection<_Data...>&)> >,
-
-                                // message handler:     void (tcp::connection<...>& client, const char* message, size_t size)
-                                unisock::events::_lib::action<actions::MESSAGE,  
-                                                            std::function<void (typename tcp::connection<_Data...>&, const char *, size_t)> >,
-                                
-                                _Actions...
-                            >, unisock::events::_lib::action_handler>::type
+                       :    public unisock::events::_lib::socket_container<
+                                _Data...,
+                                _lib::socket_data<_Data...>
+                            >,
+                            public unisock::events::_lib::action_handler<
+                                common_actions<
+                                    tcp::connection<_Data...>,
+                                    _Actions...
+                                >
+                            >
 {
     static constexpr size_t RECV_BLOCK_SIZE = 1024;
 

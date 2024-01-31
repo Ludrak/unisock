@@ -93,7 +93,7 @@ inline bool tcp::client<std::tuple<_Actions...>, _Data...>::connect(const std::s
     sock->data.type = _lib::connection_type::CLIENT;
     sock->data.address = { ip_address, port, family };
 
-    if (-1 == ::connect(sock->getSocket(), sock->data.address.getAddress(), sock->data.address.getAddressSize()))
+    if (-1 == ::connect(sock->getSocket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("connect", errno);
         return (false);

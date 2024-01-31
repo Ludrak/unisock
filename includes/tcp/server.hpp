@@ -95,7 +95,7 @@ inline bool tcp::server<std::tuple<_Actions...>, _Data...>::listen(const std::st
     }
     sock->data.type = _lib::connection_type::SERVER;
     sock->data.address = { ip_address, port, family };
-    if (-1 == ::bind(sock->getSocket(), sock->data.address.getAddress(), sock->data.address.getAddressSize()))
+    if (-1 == ::bind(sock->getSocket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
         return (false);
@@ -117,9 +117,11 @@ inline bool tcp::server<std::tuple<_Actions...>, _Data...>::listen(const std::st
 template<typename ..._Actions, typename ..._Data>
 inline bool    tcp::server<std::tuple<_Actions...>, _Data...>::on_endpoint_receive(connection<_Data...>& socket)
 {
-    struct sockaddr_in  s_addr {};
-    socklen_t           s_len = sizeof(s_addr);
-    int client = ::accept(socket.getSocket(), reinterpret_cast<sockaddr*>(&s_addr), &s_len);
+    // struct sockaddr_in  s_addr {};
+    // socklen_t           s_len = sizeof(s_addr);
+    char        addr[inet_address::ADDRESS_SIZE] { 0 };
+    socklen_t   addr_size = inet_address::ADDRESS_SIZE;
+    int client = ::accept(socket.getSocket(), reinterpret_cast<sockaddr*>(addr), &addr_size);//reinterpret_cast<sockaddr*>(&s_addr), &s_len);
     if (client < 0)
     {
         // accept error
@@ -135,7 +137,7 @@ inline bool    tcp::server<std::tuple<_Actions...>, _Data...>::on_endpoint_recei
         return false;
     }
     client_sock->data.type = _lib::connection_type::CLIENT;
-    client_sock->data.address.setAddress(s_addr);
+    client_sock->data.address = { addr, addr_size };
 
     this->template execute<actions::CONNECT>(static_cast<tcp::connection<_Data...>&>(*client_sock));
     return (false);
