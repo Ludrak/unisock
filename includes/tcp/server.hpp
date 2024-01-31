@@ -41,6 +41,7 @@ class server : public server<std::tuple<>, _Args...>
         {}
 };
 
+
 /* standart specialization for _Actions and _Data */
 template<typename ..._Actions, typename ..._Data>
 class server<std::tuple<_Actions...>, _Data...>
@@ -52,7 +53,7 @@ class server<std::tuple<_Actions...>, _Data...>
                     _Data...
                 >
 {
-    using container_type = unisock::tcp::_lib::socket_container<_lib::server_actions<connection<_Data...>, _Actions...>, _Data...>;   //typename unisock::tcp::_lib::socket_container<_Data...>;
+    using container_type = unisock::tcp::_lib::socket_container<_lib::server_actions<connection<_Data...>, _Actions...>, _Data...>;
 
     public:
         server() = default;
@@ -127,9 +128,9 @@ inline bool    tcp::server<std::tuple<_Actions...>, _Data...>::on_endpoint_recei
     }
 
     auto* client_sock = this->make_socket(client);
-    // client insertion failed
     if (client_sock == nullptr)
     {
+        // client insertion failed
         ::close(client);
         return false;
     }

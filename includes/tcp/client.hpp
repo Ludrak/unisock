@@ -46,7 +46,6 @@ class client<std::tuple<_Actions...>, _Data...> :
                     _Data...
                 >
 {
-        // using container_type = typename unisock::events::_lib::socket_container<_Data..., _lib::socket_data<_Data...>>;
         using container_type = unisock::tcp::_lib::socket_container<_lib::client_actions<connection<_Data...>, _Actions...>, _Data...>;
 
         static constexpr size_t RECV_BLOCK_SIZE = 1024;

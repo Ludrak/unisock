@@ -31,6 +31,7 @@ int main()
     server.on<MESSAGE> ( [](auto& client, const char* message, size_t size) {
         std::cout << "<" << client.data.address.getHostname() << ">: '" << std::string(message, size) << "'" << std::endl;
     } );
+    
 
     /* connect the server */
     server.listen("127.0.0.1", 8000);

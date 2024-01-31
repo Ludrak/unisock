@@ -260,8 +260,6 @@ inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_c
     else if (n_bytes == 0)
     {
         // client sent 0 (disconnected)
-        // this->template execute<actions::DISCONNECT>(socket);
-        // this->delete_socket(socket.getSocket());
         // socket MUST be deleted right after by children
         return true;
     }
