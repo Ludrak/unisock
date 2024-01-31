@@ -3,6 +3,7 @@
 #include "namespaces.hpp"
 #include "events/events.hpp"
 
-#include "tcp/tcp.hpp"
+#include "tcp/server.hpp"
+#include "tcp/client.hpp"
 
 

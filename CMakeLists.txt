@@ -64,10 +64,17 @@ if (build-examples)
 
 	include_directories(./examples/includes)
 
-	add_executable(http-server
-		examples/http-server/main.cpp
+	# Basic tcp server 
+	add_executable(tcp-server
+		examples/tcp-server/main.cpp
 	)
-	target_link_libraries(http-server cppsockets)
+	target_link_libraries(tcp-server cppsockets)
+
+	# Basic tcp client
+	add_executable(tcp-client
+		examples/tcp-client/main.cpp
+	)
+	target_link_libraries(tcp-client cppsockets)
 
 endif(build-examples)
 

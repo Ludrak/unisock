@@ -31,24 +31,56 @@ UNISOCK_LIB_NAMESPACE_END
 // actions to be hooked to tcp server/client with .on(lambda())
 namespace actions
 {
-    // server started listening
-    // prototype: void  (tcp::connection<data>& endpoint_connection);
-    struct LISTEN {};
+    //  server: N/A
+    //          
+    //  client: 
+    //      client connected to an endpoint
+    //      prototype: void  (tcp::connection<data>& server_connection);
+    struct CONNECTED {};
 
-    // server closed
-    // prototype: void  (void);
-    struct CLOSE {};
 
-    // a client connected on some endpoint of the server
-    // prototype: void  (tcp::connection<data>& client);
+    //  server: 
+    //      server started listening
+    //      prototype: void  (tcp::connection<data>& endpoint_connection);
+    //
+    //  client: N/A
+    struct LISTENING {};
+
+
+    //  server: 
+    //      server endpoint closed
+    //      prototype: void  (tcp::connection<data>& endpoint_connection);
+    //
+    //  client:
+    //      client endpoint connection closed
+    //      prototype: void  (tcp::connection<data>& server_connection);
+    struct CLOSED {};
+
+    //  server: 
+    //      a client connected on an endpoint of the server
+    //      prototype: void  (tcp::connection<data>& endpoint, tcp::connection<data>& client);
+    //
+    //  client: N/A
     struct CONNECT {};
 
-    // a client disconnected from the server
-    // prototype: void  (tcp::connection<data>& client);
+    //  server: 
+    //      a client disconnected from the server
+    //      prototype: void  (tcp::connection<data>& client);
+    //
+    //  client: N/A
     struct DISCONNECT {};
 
     // a client sent a tcp message to the server
     // prototype: void  (tcp::connection<data>& client, const char* message, const size_t size);
+
+
+    //  server: 
+    //      server received data from a client
+    //      prototype: void  (tcp::connection<data>& client, const char* message, const size_t size);
+    //
+    //  client:
+    //      client received data from one of its connections
+    //      prototype: void  (tcp::connection<data>& connection, const char* message, const size_t size);
     struct MESSAGE {};
 
     // an error has occurred 
@@ -57,10 +89,19 @@ namespace actions
 };
 
 /* predefinition of tcp::server<...> for socket_data */
-template<typename ..._Data>
+template<typename ..._Args>
 class server;
 
+/* predefinition of tcp::client<...> for socket_data */
+template<typename ..._Args>
+class client;
+
+
 UNISOCK_LIB_NAMESPACE_START
+
+/* predefinition of tcp::_lib::socket_conainer<...> for socket_data */
+template<typename ..._Data>
+class socket_container;
 
 /* socket data for each tcp socket */
 template<typename ..._Data>
@@ -69,125 +110,99 @@ class socket_data
     public:
         inet_address    address;
 
-    private:
+    // private:
         _lib::connection_type   type;
         std::queue<std::string> send_buffer;
 
+        friend class socket_container<_Data...>;
         friend class server<_Data...>;
+        friend class client<_Data...>;
 };
 
 UNISOCK_LIB_NAMESPACE_END
 
-/* connection type for tcp server with data */
+/* connection type for tcp server/client with data */
 template<typename ..._Data>
 using connection = typename unisock::_lib::socket<_Data..., _lib::socket_data<_Data...>>;
 
+UNISOCK_LIB_NAMESPACE_START
 
-template<typename ..._Data>
-class server :  public unisock::events::_lib::socket_container<_Data..., _lib::socket_data<_Data...>>,
-                public unisock::events::_lib::action_handler
-                <
-                    // error handler:   void (const std::string& function, int error)
-                    unisock::events::_lib::action<actions::ERROR,  
-                                                  std::function<void (const std::string&, int)> >,
 
-                    // listen handler:      void (typename tcp::connection<_Data...>& endpoint_connection)              
-                    unisock::events::_lib::action<actions::LISTEN,  
-                                                  std::function<void (typename tcp::connection<_Data...>& )> >,
 
-                    // close handler:       void ()
-                    unisock::events::_lib::action<actions::CLOSE,  
-                                                  std::function<void ()> >,
+/* expand tuple to parameter pack util, TODO: move this in some util file */
+template<typename _Tuple, template<typename...> class T>
+struct expand;
 
-                    // connect handler:     void (tcp::connection<...>& client)
-                    unisock::events::_lib::action<actions::CONNECT,
-                                                  std::function<void (typename tcp::connection<_Data...>& )> >,
-
-                    // disconnect handler:  void (tcp::connection<...>& client)
-                    unisock::events::_lib::action<actions::DISCONNECT,
-                                                  std::function<void (typename tcp::connection<_Data...>& )> >,
-
-                    // message handler:     void (tcp::connection<...>& client, const char* message, size_t size)
-                    unisock::events::_lib::action<actions::MESSAGE,  
-                                                  std::function<void (typename tcp::connection<_Data...>&, const char *, size_t)> >
-                >
+template<template<typename...> class T, typename... _Args>
+struct expand<std::tuple<_Args...>, T>
 {
-        using container_type = typename unisock::events::_lib::socket_container<_Data..., _lib::socket_data<_Data...>>;
+    using type = T<_Args...>;
+};
 
-        constexpr size_t RECV_BLOCK_SIZE = 1024;
+
+
+/* inherited socket container which regroup common server/client tcp operations,
+   defines a common base for server/client                                        */
+template<typename ..._Actions, typename ..._Data>
+class socket_container<std::tuple<_Actions...>, _Data...>
+                       :    public unisock::events::_lib::socket_container<_Data..., _lib::socket_data<_Data...>>,
+                            public expand<std::tuple<
+                                // close handler:       void ()
+                                unisock::events::_lib::action<actions::ERROR,  
+                                                            std::function<void (const std::string&, int)> >,
+
+                                // close handler:       void (tcp::connection<...>& connection)
+                                unisock::events::_lib::action<actions::CLOSED,  
+                                                            std::function<void (typename tcp::connection<_Data...>&)> >,
+
+                                // message handler:     void (tcp::connection<...>& client, const char* message, size_t size)
+                                unisock::events::_lib::action<actions::MESSAGE,  
+                                                            std::function<void (typename tcp::connection<_Data...>&, const char *, size_t)> >,
+                                
+                                _Actions...
+                            >, unisock::events::_lib::action_handler>::type
+{
+    static constexpr size_t RECV_BLOCK_SIZE = 1024;
+
+    using container_type = typename unisock::events::_lib::socket_container<_Data..., _lib::socket_data<_Data...>>;
 
     public:
         using connection = typename tcp::connection<_Data...>;
 
-        server()
+    public:
+        socket_container()
         : container_type()
         {
         }
 
-        server(unisock::events::handler& handler)
+        socket_container(unisock::events::handler& handler)
         : container_type(handler)
         {
         }
 
-        /* makes the server start listening, returns false on error */
-        /* errno of the error can be retrieved in actions::ERROR    */
-        virtual bool listen(const std::string& ip_address, const int port, const sa_family_t family = AF_INET);
-
-        virtual void send(connection& connection, const std::string& message_str);
-        virtual void send(connection& connection, const char *message, const size_t size);
+        virtual void    send(connection& connection, const std::string& message_str);
+        virtual void    send(connection& connection, const char *message, const size_t size);
 
 
-    private:
-        // called when some socket needs to read received data
-        // (i.e. on received)
-        // returns true if iterators of socket_container::sockets are changed
-        virtual bool    on_receive(unisock::_lib::socket_wrap* sptr) override;
+    protected:
+        // received on an accepted or connected socket
+        // MUST be inherited in child class and call delete_socket on the socket if it returns true
+        // this is because disconnection is handeled by different actions on server and client (i.e. actions::DISCONNECT, actions::CLOSED respectively)
+        virtual bool    on_client_receive(connection& socket);
 
-        // called when a socket that was requesting write got writeable
-        // (i.e. on queued send)
-        // returns true if iterators of socket_container::sockets are changed
+
         virtual bool    on_writeable(unisock::_lib::socket_wrap* sptr) override;
-    
 };
 
 
 
 
+/* ======================================================================== */
+/* IMPLEMENTATION                                                           */
 
 
-
-template<typename ..._Data>
-inline bool tcp::server<_Data...>::listen(const std::string& ip_address, const int port, const sa_family_t family)
-{
-    server::connection* sock = this->make_socket(family, SOCK_STREAM, 0);
-    if (sock == nullptr)
-    {
-        this->template execute<actions::ERROR>("socket", errno);
-        return false;
-    }
-    sock->data.type = _lib::connection_type::SERVER;
-    sock->data.address = { ip_address, port, family };
-    if (-1 == ::bind(sock->getSocket(), sock->data.address.getAddress(), sock->data.address.getAddressSize()))
-    {
-        this->template execute<actions::ERROR>("bind", errno);
-        return (false);
-    }
-    
-    if (-1 == ::listen(sock->getSocket(), 10))
-    {
-        this->template execute<actions::ERROR>("listen", errno);
-        return (false);
-    }
-
-    this->template execute<actions::LISTEN>(*sock);
-
-    return (true);
-}
-
-
-
-template<typename ..._Data>
-inline void tcp::server<_Data...>::send(connection& connection, const std::string& message_str)
+template<typename ..._Actions, typename ..._Data>
+inline void tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::send(connection& connection, const std::string& message_str)
 {
     // try single poll for writing on connection socket with timeout = 0
     bool available = events::single_poll(connection, unisock::events::_lib::WANT_WRITE, 0);
@@ -221,74 +236,45 @@ inline void tcp::server<_Data...>::send(connection& connection, const std::strin
 
 
 
-template<typename ..._Data>
-inline void tcp::server<_Data...>::send(connection& connection, const char *message, const size_t size)
+
+template<typename ..._Actions, typename ..._Data>
+inline void tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::send(connection& connection, const char *message, const size_t size)
 {
     this->send(connection, std::string(message, size));
 }
 
 
 
-// called when some socket needs to read received data
-// (i.e. on received)
-template<typename ..._Data>
-inline bool    tcp::server<_Data...>::on_receive(unisock::_lib::socket_wrap* sptr)
-{
-    auto* socket = reinterpret_cast<connection*>(sptr);
-    if (socket->data.type == _lib::connection_type::SERVER)
-    {
-        struct sockaddr_in  s_addr {};
-        socklen_t           s_len = sizeof(s_addr);
-        int client = ::accept(socket->getSocket(), reinterpret_cast<sockaddr*>(&s_addr), &s_len);
-        if (client < 0)
-        {
-            // accept error
-            this->template execute<actions::ERROR>("accept", errno);
-            return (false);
-        }
-        
-        server::connection* client_sock = this->make_socket(client);
-        // client insertion failed
-        if (client_sock == nullptr)
-        {
-            ::close(client);
-            return false;
-        }
-        client_sock->data.type = _lib::connection_type::CLIENT;
-        client_sock->data.address.setAddress(s_addr);
 
-        this->template execute<actions::CONNECT>(static_cast<connection&>(*client_sock));
-    }
-    else /* if socket.data.type == connection_type::CLIENT */
+template<typename ..._Actions, typename ..._Data>
+inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_client_receive(connection& socket)
+{
+    char buffer[RECV_BLOCK_SIZE] {0};
+    size_t n_bytes = ::recv(socket.getSocket(), buffer, RECV_BLOCK_SIZE, MSG_DONTWAIT);
+    if (n_bytes < 0)
     {
-        char buffer[RECV_BLOCK_SIZE] {0};
-        size_t n_bytes = ::recv(socket->getSocket(), buffer, RECV_BLOCK_SIZE, MSG_DONTWAIT);
-        if (n_bytes < 0)
-        {
-            // recv error
-            this->template execute<actions::ERROR>("recv", errno);
-            return false; 
-        }
-        else if (n_bytes == 0)
-        {
-            // client sent 0 (disconnected)
-            this->template execute<actions::DISCONNECT>(static_cast<connection&>(*socket));
-            this->delete_socket(socket->getSocket());
-            return true;
-        }
-        // received n_bytes in buffer
-        this->template execute<actions::MESSAGE>(static_cast<connection&>(*socket), buffer, n_bytes);
+        // recv error
+        this->template execute<actions::ERROR>("recv", errno);
+        return false; 
     }
-    // TODO CHECK ITER INVALIDATION
+    else if (n_bytes == 0)
+    {
+        // client sent 0 (disconnected)
+        // this->template execute<actions::DISCONNECT>(socket);
+        // this->delete_socket(socket.getSocket());
+        // socket MUST be deleted right after by children
+        return true;
+    }
+    // received n_bytes in buffer
+    this->template execute<actions::MESSAGE>(socket, buffer, n_bytes);
     return (false);
 }
 
 
 
-// called when a socket that was requesting write got writeable
-// (i.e. on queued send)
-template<typename ..._Data>
-inline bool    tcp::server<_Data...>::on_writeable(unisock::_lib::socket_wrap* sptr)
+
+template<typename ..._Actions, typename ..._Data>
+inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_writeable(unisock::_lib::socket_wrap* sptr)
 {
     auto* socket = reinterpret_cast<connection*>(sptr);
 
@@ -298,7 +284,7 @@ inline bool    tcp::server<_Data...>::on_writeable(unisock::_lib::socket_wrap* s
         this->handler.socket_want_write(socket->getSocket(), false);
         return false;
     }
-    
+
     // socket is available and has an empty send_buffer, try direct send and queue message tail if any
     size_t n_bytes = ::send(socket->getSocket(), socket->data.send_buffer.front().c_str(), socket->data.send_buffer.front().size(), 0);
     if (n_bytes < 0)
@@ -317,10 +303,13 @@ inline bool    tcp::server<_Data...>::on_writeable(unisock::_lib::socket_wrap* s
     socket->data.send_buffer.pop();
     if (socket->data.send_buffer.empty())
         this->handler.socket_want_write(socket->getSocket(), false);
-    
+
     return (false);
 }
 
+
+
+UNISOCK_LIB_NAMESPACE_END
 
 UNISOCK_TCP_NAMESPACE_END
 

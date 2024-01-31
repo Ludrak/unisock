@@ -68,6 +68,7 @@ class socket_container : public isocket_container
 {
     public:
         using socket_type = unisock::_lib::socket<_Data...>;
+        using data_type = decltype(unisock::_lib::socket<_Data...>::data);
         using poll_data = unisock::events::_lib::socket_data<unisock::events::handler_type>;
 
         /* implicitly creating an handler for this server, */
