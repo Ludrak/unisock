@@ -5,6 +5,7 @@
 #include "events/events.hpp"
 #include "events/action_hanlder.hpp"
 #include "sys/socket.h"
+#include <queue>
 
 UNISOCK_NAMESPACE_START
 
@@ -120,11 +121,11 @@ UNISOCK_LIB_NAMESPACE_START
 
 /* common server/client definition with all args */
 template<typename ..._Args>
-class socket_container;
+class common_impl;
 
-/* socket_container definition with _Action and _Data */
+/* common implementation for server/client */
 template<typename ..._Actions, typename ..._Data>
-class socket_container<std::tuple<_Actions...>, _Data...>
+class common_impl<std::tuple<_Actions...>, _Data...>
             : public unisock::events::_lib::socket_container<_Data..., _lib::socket_data>,
               public unisock::events::_lib::action_handler<common_actions<udp::socket<_Data...>, _Actions...>>
 {
@@ -133,9 +134,9 @@ class socket_container<std::tuple<_Actions...>, _Data...>
     using container_type = unisock::events::_lib::socket_container<_Data..., _lib::socket_data>;
 
     public:
-        socket_container() = default;
+        common_impl() = default;
 
-        socket_container(unisock::events::handler& handler)
+        common_impl(unisock::events::handler& handler)
         : container_type(handler)
         {}
 
@@ -146,7 +147,7 @@ class socket_container<std::tuple<_Actions...>, _Data...>
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool    udp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_receive(unisock::_lib::socket_wrap* sptr)
+inline bool    udp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::on_receive(unisock::_lib::socket_wrap* sptr)
 {
     auto* socket = reinterpret_cast<udp::socket<_Data...>*>(sptr);
     char  buffer[RECV_BLOCK_SIZE];
@@ -170,7 +171,7 @@ inline bool    udp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::o
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool    udp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_writeable(unisock::_lib::socket_wrap* sptr) 
+inline bool    udp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::on_writeable(unisock::_lib::socket_wrap* sptr) 
 {
     auto* socket = reinterpret_cast<udp::socket<_Data...>*>(sptr);
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "udp/udp.hpp"
+#include "udp/common.hpp"
 
 UNISOCK_NAMESPACE_START
 
@@ -17,24 +17,38 @@ using client_actions = std::tuple<
     _Actions...
 >;
 
+
+template<typename ..._Data>
+class client_impl;
+
 UNISOCK_LIB_NAMESPACE_END
 
 
-template<typename ..._Data>
-class client : public client<std::tuple<>, _Data...>
-{
-    public:
-        client() = default;
 
-        client(unisock::events::handler& handler)
-        : client<std::tuple<>, _Data...>(handler)
-        {}
-};
+
+/* ======================================================================== */
+/* TYPES ALIASES FOR CREATING CLIENTS                                       */
+
+
+/* definition of standart client with no additionnal data */
+using client = unisock::udp::_lib::client_impl<std::tuple<>>;
+
+
+/* type alias to get a client with some additionnal data  */
+template<typename ..._ConnectionData>
+using client_of = unisock::udp::_lib::client_impl<std::tuple<>, _ConnectionData...>;
+
+
+
+/* ======================================================================== */
+/* CLIENT IMPLEMENTATION DEFINITION                                         */
+
+UNISOCK_LIB_NAMESPACE_START
 
 
 template<typename ..._Actions, typename ..._Data>
-class client<std::tuple<_Actions...>, _Data...>
-            :   public unisock::udp::_lib::socket_container<
+class client_impl<std::tuple<_Actions...>, _Data...>
+            :   public unisock::udp::_lib::common_impl<
                         _lib::client_actions<
                             udp::socket<_Data...>,
                             _Actions...
@@ -42,12 +56,12 @@ class client<std::tuple<_Actions...>, _Data...>
                         _Data...
                     >
 {
-    using container_type = unisock::udp::_lib::socket_container<_lib::client_actions<socket<_Data...>, _Actions...>, _Data...>;
+    using container_type = unisock::udp::_lib::common_impl<_lib::client_actions<socket<_Data...>, _Actions...>, _Data...>;
 
     public:
-        client() = default;
+        client_impl() = default;
 
-        client(unisock::events::handler& handler)
+        client_impl(unisock::events::handler& handler)
         : container_type(handler)
         {}
 
@@ -64,14 +78,22 @@ class client<std::tuple<_Actions...>, _Data...>
         virtual void send(const char* message, size_t bytes);
 };
 
+
+
+
+
+/* ======================================================================== */
+/* IMPLEMENTATION                                                           */
+
+
 template<typename ..._Actions, typename ..._Data>
-inline bool udp::client<std::tuple<_Actions...>, _Data...>::target_server(const std::string& address, const int port, const sa_family_t family)
+inline bool udp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::target_server(const std::string& address, const int port, const sa_family_t family)
 {
     return (target_server(inet_address(address, port, family)));
 }
 
 template<typename ..._Actions, typename ..._Data>
-inline bool udp::client<std::tuple<_Actions...>, _Data...>::target_server(const inet_address& address)
+inline bool udp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::target_server(const inet_address& address)
 {
     auto* sock = this->make_socket(address.family(), SOCK_DGRAM, 0);
     if (sock == nullptr)
@@ -86,14 +108,14 @@ inline bool udp::client<std::tuple<_Actions...>, _Data...>::target_server(const 
 
 
 template<typename ..._Actions, typename ..._Data>
-inline void udp::client<std::tuple<_Actions...>, _Data...>::send(const char* message, size_t bytes)
+inline void udp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::send(const char* message, size_t bytes)
 {
     const std::string message_str { message, bytes };
     this->send(message_str);
 }
 
 template<typename ..._Actions, typename ..._Data>
-inline void unisock::udp::client<std::tuple<_Actions...>, _Data...>::send(const std::string& message)
+inline void udp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::send(const std::string& message)
 {
     for (auto& pair : this->sockets)
     {
@@ -117,9 +139,7 @@ inline void unisock::udp::client<std::tuple<_Actions...>, _Data...>::send(const 
     }
 }
 
-
-
-
+UNISOCK_LIB_NAMESPACE_END
 
 UNISOCK_UDP_NAMESPACE_END
 

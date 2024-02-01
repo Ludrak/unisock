@@ -1,12 +1,16 @@
 #pragma once
 
-#include "udp/udp.hpp"
+#include "udp/common.hpp"
 
 UNISOCK_NAMESPACE_START
 
 UNISOCK_UDP_NAMESPACE_START
 
 UNISOCK_LIB_NAMESPACE_START
+
+
+/* ======================================================================== */
+/* SERVER ACTIONS                                                           */
 
 template<typename _Socket, typename ..._Actions>
 using server_actions = std::tuple<
@@ -17,26 +21,39 @@ using server_actions = std::tuple<
     _Actions...
 >;
 
+template<typename ..._Data>
+class server_impl;
+
 UNISOCK_LIB_NAMESPACE_END
 
 
 
 
-template<typename ..._Data>
-class server : public udp::server<std::tuple<>, _Data...>
-{
-    public:
-        server() = default;
+/* ======================================================================== */
+/* TYPES ALIASES FOR CREATING SERVERS                                       */
 
-        server(unisock::events::handler& handler)
-        : udp::server<std::tuple<>, _Data...>(handler)
-        {}
-};
+/* definition of standart server with no additionnal data */
+using server = unisock::udp::_lib::server_impl<std::tuple<>>;
 
+
+
+
+/* type alias to get a server with some additionnal data  */
+template<typename ..._ConnectionData>
+using server_of = unisock::udp::_lib::server_impl<std::tuple<>, _ConnectionData...>;
+
+
+
+
+/* ======================================================================== */
+/* SERVER IMPLEMENTATION DEFINITION                                         */
+
+
+UNISOCK_LIB_NAMESPACE_START
 
 template<typename ..._Actions, typename ..._Data>
-class server<std::tuple<_Actions...>, _Data...>
-            :   public unisock::udp::_lib::socket_container<
+class server_impl<std::tuple<_Actions...>, _Data...>
+            :   public unisock::udp::_lib::common_impl<
                         _lib::server_actions<
                             udp::socket<_Data...>,
                             _Actions...
@@ -44,12 +61,12 @@ class server<std::tuple<_Actions...>, _Data...>
                         _Data...
                     >
 {
-    using container_type = unisock::udp::_lib::socket_container<_lib::server_actions<udp::socket<_Data...>, _Actions...>, _Data...>;
+    using container_type = unisock::udp::_lib::common_impl<_lib::server_actions<udp::socket<_Data...>, _Actions...>, _Data...>;
 
     public:
-        server() = default;
+        server_impl() = default;
 
-        server(unisock::events::handler& handler)
+        server_impl(unisock::events::handler& handler)
         : container_type(handler)
         {}
 
@@ -71,8 +88,14 @@ class server<std::tuple<_Actions...>, _Data...>
 
 
 
+
+
+/* ======================================================================== */
+/* IMPLEMENTATION                                                           */
+
+
 template<typename ..._Actions, typename ..._Data>
-inline bool udp::server<std::tuple<_Actions...>, _Data...>::listen(const std::string& ip_address, const int port, const sa_family_t family)
+inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(const std::string& ip_address, const int port, const sa_family_t family)
 {
     auto* sock = this->make_socket(family, SOCK_DGRAM, 0);
     if (sock == nullptr)
@@ -95,7 +118,7 @@ inline bool udp::server<std::tuple<_Actions...>, _Data...>::listen(const std::st
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool udp::server<std::tuple<_Actions...>, _Data...>::listen_multicast(const std::string& multiaddr, const std::string& interface, const int port, const sa_family_t interface_family)
+inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen_multicast(const std::string& multiaddr, const std::string& interface, const int port, const sa_family_t interface_family)
 {
     auto* sock = this->make_socket(interface_family, SOCK_DGRAM, 0);
     if (sock == nullptr)
@@ -127,7 +150,7 @@ inline bool udp::server<std::tuple<_Actions...>, _Data...>::listen_multicast(con
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool udp::server<std::tuple<_Actions...>, _Data...>::listen_broadcast(const std::string& interface, const int port, const sa_family_t interface_family)
+inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen_broadcast(const std::string& interface, const int port, const sa_family_t interface_family)
 {
     auto* sock = this->make_socket(interface_family, SOCK_DGRAM, 0);
     if (sock == nullptr)
@@ -152,6 +175,8 @@ inline bool udp::server<std::tuple<_Actions...>, _Data...>::listen_broadcast(con
     this->template execute<actions::LISTENING>(*sock);
     return (true);
 }
+
+UNISOCK_LIB_NAMESPACE_END
 
 UNISOCK_UDP_NAMESPACE_END
 

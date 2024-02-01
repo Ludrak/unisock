@@ -6,7 +6,7 @@ using namespace udp::actions;
 
 int main()
 {
-    udp::server<> server {};
+    udp::server server {};
 
     server.on<LISTENING>( [](const udp::socket<>& socket){ 
         std::cout << "listening on " << socket.data.address.hostname() << std::endl;

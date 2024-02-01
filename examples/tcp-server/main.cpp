@@ -4,10 +4,12 @@
 using namespace unisock;
 using namespace tcp::actions;
 
+struct a{int a;};
+
 int main()
 {
     /* creating tcp server */
-    tcp::server<>   server { };
+    tcp::server server = tcp::server();
 
     /* setting up hooks for events on that server */
     server.on<LISTENING> ( [](auto& connection) {

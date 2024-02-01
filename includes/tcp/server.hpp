@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tcp/tcp.hpp"
+#include "tcp/common.hpp"
 
 UNISOCK_NAMESPACE_START
 
@@ -8,7 +8,11 @@ UNISOCK_TCP_NAMESPACE_START
 
 UNISOCK_LIB_NAMESPACE_START
 
-/* actions types for tcp::server */
+/* ======================================================================== */
+/* SERVER ACTIONS                                                           */
+
+
+/* actions types for tcp::server_impl */
 template<typename _Connection, typename ..._Actions>
 using server_actions = std::tuple<
 
@@ -26,26 +30,45 @@ using server_actions = std::tuple<
     _Actions...
 >;
 
-UNISOCK_LIB_NAMESPACE_END
 
 
 /* definition of server with all args */
 template<typename ..._Args>
-class server : public server<std::tuple<>, _Args...>
-{
-    public:
-        server() = default;
-        // handler constructor
-        server(unisock::events::handler& handler)
-        : server<std::tuple<>, _Args...>(handler)
-        {}
-};
+class server_impl;
 
+UNISOCK_LIB_NAMESPACE_END
+
+
+
+/* ======================================================================== */
+/* TYPES ALIASES FOR CREATING SERVERS                                       */
+
+
+
+/* definition of standart server with no additionnal data */
+using server = unisock::tcp::_lib::server_impl<std::tuple<>>;
+
+
+
+
+/* type alias to get a server with some additionnal data  */
+template<typename ..._ConnectionData>
+using server_of = unisock::tcp::_lib::server_impl<std::tuple<>, _ConnectionData...>;
+
+
+
+
+
+/* ======================================================================== */
+/* SERVER IMPLEMENTATION DEFINITION                                         */
+
+
+UNISOCK_LIB_NAMESPACE_START
 
 /* standart specialization for _Actions and _Data */
 template<typename ..._Actions, typename ..._Data>
-class server<std::tuple<_Actions...>, _Data...>
-             :  public unisock::tcp::_lib::socket_container<
+class server_impl<std::tuple<_Actions...>, _Data...>
+             :  public unisock::tcp::_lib::common_impl<
                     _lib::server_actions<
                         tcp::connection<_Data...>,
                         _Actions...
@@ -53,12 +76,12 @@ class server<std::tuple<_Actions...>, _Data...>
                     _Data...
                 >
 {
-    using container_type = unisock::tcp::_lib::socket_container<_lib::server_actions<connection<_Data...>, _Actions...>, _Data...>;
+    using container_type = unisock::tcp::_lib::common_impl<_lib::server_actions<connection<_Data...>, _Actions...>, _Data...>;
 
     public:
-        server() = default;
+        server_impl() = default;
 
-        server(unisock::events::handler& handler)
+        server_impl(unisock::events::handler& handler)
         : container_type(handler)
         {}
 
@@ -85,7 +108,7 @@ class server<std::tuple<_Actions...>, _Data...>
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool tcp::server<std::tuple<_Actions...>, _Data...>::listen(const std::string& ip_address, const int port, const sa_family_t family)
+inline bool tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(const std::string& ip_address, const int port, const sa_family_t family)
 {
     auto* sock = this->make_socket(family, SOCK_STREAM, 0);
     if (sock == nullptr)
@@ -115,7 +138,7 @@ inline bool tcp::server<std::tuple<_Actions...>, _Data...>::listen(const std::st
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool    tcp::server<std::tuple<_Actions...>, _Data...>::on_endpoint_receive(connection<_Data...>& socket)
+inline bool    tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::on_endpoint_receive(connection<_Data...>& socket)
 {
     // struct sockaddr_in  s_addr {};
     // socklen_t           s_len = sizeof(s_addr);
@@ -146,7 +169,7 @@ inline bool    tcp::server<std::tuple<_Actions...>, _Data...>::on_endpoint_recei
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool tcp::server<std::tuple<_Actions...>, _Data...>::on_client_receive(connection<_Data...>& socket)
+inline bool tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::on_client_receive(connection<_Data...>& socket)
 {
     bool disconnected = container_type::on_client_receive(socket);
     if (disconnected)
@@ -162,7 +185,7 @@ inline bool tcp::server<std::tuple<_Actions...>, _Data...>::on_client_receive(co
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool    tcp::server<std::tuple<_Actions...>, _Data...>::on_receive(unisock::_lib::socket_wrap* sptr)
+inline bool    tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::on_receive(unisock::_lib::socket_wrap* sptr)
 {
     assert(sptr != nullptr);
 
@@ -185,6 +208,7 @@ inline bool    tcp::server<std::tuple<_Actions...>, _Data...>::on_receive(unisoc
     return (false);
 }
 
+UNISOCK_LIB_NAMESPACE_END
 
 UNISOCK_TCP_NAMESPACE_END
 

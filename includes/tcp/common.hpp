@@ -86,18 +86,18 @@ namespace actions
 
 /* predefinition of tcp::server<...> for socket_data */
 template<typename ..._Args>
-class server;
+class server_impl;
 
 /* predefinition of tcp::client<...> for socket_data */
 template<typename ..._Args>
-class client;
+class client_impl;
 
 
 UNISOCK_LIB_NAMESPACE_START
 
 /* predefinition of tcp::_lib::socket_conainer<...> for socket_data */
 template<typename ..._Data>
-class socket_container;
+class common_impl;
 
 /* socket data for each tcp socket */
 template<typename ..._Data>
@@ -110,9 +110,9 @@ class socket_data
         _lib::connection_type   type;
         std::queue<std::string> send_buffer;
 
-        friend class socket_container<_Data...>;
-        friend class server<_Data...>;
-        friend class client<_Data...>;
+        // friend class socket_container<_Data...>;
+        // friend class server_impl<_Data...>;
+        // friend class client_impl<_Data...>;
 };
 
 UNISOCK_LIB_NAMESPACE_END
@@ -147,7 +147,7 @@ using common_actions = std::tuple<
 /* inherited socket container which regroup common server/client tcp operations,
    defines a common base for server/client                                        */
 template<typename ..._Actions, typename ..._Data>
-class socket_container<std::tuple<_Actions...>, _Data...>
+class common_impl<std::tuple<_Actions...>, _Data...>
                        :    public unisock::events::_lib::socket_container<
                                 _Data...,
                                 _lib::socket_data<_Data...>
@@ -167,12 +167,12 @@ class socket_container<std::tuple<_Actions...>, _Data...>
         using connection = typename tcp::connection<_Data...>;
 
     public:
-        socket_container()
+        common_impl()
         : container_type()
         {
         }
 
-        socket_container(unisock::events::handler& handler)
+        common_impl(unisock::events::handler& handler)
         : container_type(handler)
         {
         }
@@ -199,7 +199,7 @@ class socket_container<std::tuple<_Actions...>, _Data...>
 
 
 template<typename ..._Actions, typename ..._Data>
-inline void tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::send(connection& connection, const std::string& message_str)
+inline void tcp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::send(connection& connection, const std::string& message_str)
 {
     // try single poll for writing on connection socket with timeout = 0
     bool available = events::single_poll(connection, unisock::events::_lib::WANT_WRITE, 0);
@@ -235,7 +235,7 @@ inline void tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::send
 
 
 template<typename ..._Actions, typename ..._Data>
-inline void tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::send(connection& connection, const char *message, const size_t size)
+inline void tcp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::send(connection& connection, const char *message, const size_t size)
 {
     this->send(connection, std::string(message, size));
 }
@@ -244,7 +244,7 @@ inline void tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::send
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_client_receive(connection& socket)
+inline bool tcp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::on_client_receive(connection& socket)
 {
     char buffer[RECV_BLOCK_SIZE] {0};
     ssize_t n_bytes = ::recv(socket.get_socket(), buffer, RECV_BLOCK_SIZE, MSG_DONTWAIT);
@@ -269,7 +269,7 @@ inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_c
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_writeable(unisock::_lib::socket_wrap* sptr)
+inline bool tcp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::on_writeable(unisock::_lib::socket_wrap* sptr)
 {
     auto* socket = reinterpret_cast<connection*>(sptr);
 

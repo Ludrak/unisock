@@ -10,7 +10,7 @@ int main()
     inet_address server_addr = inet_address("127.0.0.1", 8000, AF_INET);
     udp::send(server_addr, "Hello !");
 
-    udp::client<> client {};
+    udp::client client {};
 
     client.on<MESSAGE>([&client](const udp::socket<>& socket, const inet_address& server_address, const char* message, const size_t size){
         // send to all targetted servers

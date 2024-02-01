@@ -4,10 +4,13 @@
 using namespace unisock;
 using namespace tcp::actions;
 
+
+struct a {};
+
 int main()
 {
     /* creating tcp client */
-    tcp::client<>   client { };
+    tcp::client client = tcp::client();
 
     /* setting up hooks for events on that client */
     client.on<CONNECTED> ( [&client](auto& connection) {
