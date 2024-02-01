@@ -103,9 +103,10 @@ inline void unisock::udp::client<std::tuple<_Actions...>, _Data...>::send(const 
             return;
 
         else if (result == send_result::ERROR)
-            // CRASH CLANG ??
-            // this->template execute<ERROR>("sendto", errno);
-            (void)nullptr;
+        {
+            this->template execute<actions::ERROR>("sendto", errno);
+            return ;
+        }
 
         // sent incomplete data or socket was not available, queue message to send later
         size_t bytes_sent = (result > send_result::INCOMPLETE) ? (result - send_result::INCOMPLETE) : 0 /* send_result::UNAVAILABLE */;
