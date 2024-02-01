@@ -28,7 +28,7 @@ class server : public udp::server<std::tuple<>, _Data...>
     public:
         server() = default;
 
-        server(const unisock::events::handler& handler)
+        server(unisock::events::handler& handler)
         : udp::server<std::tuple<>, _Data...>(handler)
         {}
 };
@@ -44,12 +44,12 @@ class server<std::tuple<_Actions...>, _Data...>
                         _Data...
                     >
 {
-    using container_type = unisock::udp::_lib::socket_container<_lib::server_actions<socket<_Data...>, _Actions...>, _Data...>;
+    using container_type = unisock::udp::_lib::socket_container<_lib::server_actions<udp::socket<_Data...>, _Actions...>, _Data...>;
 
     public:
         server() = default;
 
-        server(const unisock::events::handler& handler)
+        server(unisock::events::handler& handler)
         : container_type(handler)
         {}
 

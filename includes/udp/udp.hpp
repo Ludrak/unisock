@@ -135,7 +135,7 @@ class socket_container<std::tuple<_Actions...>, _Data...>
     public:
         socket_container() = default;
 
-        socket_container(const unisock::events::handler& handler)
+        socket_container(unisock::events::handler& handler)
         : container_type(handler)
         {}
 

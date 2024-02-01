@@ -26,7 +26,7 @@ class client : public client<std::tuple<>, _Data...>
     public:
         client() = default;
 
-        client(const unisock::events::handler& handler)
+        client(unisock::events::handler& handler)
         : client<std::tuple<>, _Data...>(handler)
         {}
 };
@@ -47,7 +47,7 @@ class client<std::tuple<_Actions...>, _Data...>
     public:
         client() = default;
 
-        client(const unisock::events::handler& handler)
+        client(unisock::events::handler& handler)
         : container_type(handler)
         {}
 
