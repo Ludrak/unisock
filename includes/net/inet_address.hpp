@@ -41,6 +41,21 @@ class inet_address
         size_t              size() const;
         sa_family_t         family() const;
 
+        const void*         in_addr() const
+        {
+            switch (to_address<sockaddr>()->sa_family)
+            {
+            case AF_INET:
+                return (&to_address<sockaddr_in>()->sin_addr);
+                break;
+            
+            case AF_INET6:
+                return (&to_address<sockaddr_in6>()->sin6_addr);
+                break;
+            }
+            return (nullptr);
+        }
+
         template<typename T>
         const T*            to_address() const
         {

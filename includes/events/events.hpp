@@ -113,7 +113,7 @@ class socket_container : public isocket_container
         virtual void    close()
         {
             while (this->sockets.size() > 0)
-                this->delete_socket(this->sockets.begin()->second.getSocket());
+                this->delete_socket(this->sockets.begin()->second.get_socket());
         }
         
     protected:
@@ -121,10 +121,10 @@ class socket_container : public isocket_container
         socket_type*    make_socket(_Args&&... args)
         {
             socket_type sock { this, std::forward<_Args>(args)... };
-            auto insert = this->sockets.insert(std::make_pair(sock.getSocket(), sock));
+            auto insert = this->sockets.insert(std::make_pair(sock.get_socket(), sock));
             if (!insert.second)
                 return nullptr; // insert error
-            this->handler.add_socket(sock.getSocket(), &insert.first->second);
+            this->handler.add_socket(sock.get_socket(), &insert.first->second);
             return (&insert.first->second);
         }
 

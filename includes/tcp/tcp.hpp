@@ -209,25 +209,25 @@ inline void tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::send
     {
         // queue data to be send
         connection.data.send_buffer.push(message_str);
-        this->handler.socket_want_write(connection.getSocket(), true);
+        this->handler.socket_want_write(connection.get_socket(), true);
         return ;
     }
 
     // socket is available and has an empty send_buffer, try direct send and queue message tail if any
-    size_t n_bytes = ::send(connection.getSocket(), message_str.c_str(), message_str.size(), 0);
+    size_t n_bytes = ::send(connection.get_socket(), message_str.c_str(), message_str.size(), 0);
     if (n_bytes < 0)
     {
         // ::send error, queue data to be sent later
         this->template execute<actions::ERROR>("send", errno);
         connection.data.send_buffer.push(message_str);
-        this->handler.socket_want_write(connection.getSocket(), true);
+        this->handler.socket_want_write(connection.get_socket(), true);
         return ;
     }
     // if all data was not sent, push back tail to send_buffer
     if (n_bytes < message_str.size())
     {
         connection.data.send_buffer.push(message_str.substr(n_bytes));
-        this->handler.socket_want_write(connection.getSocket(), true);
+        this->handler.socket_want_write(connection.get_socket(), true);
     }
 }
 
@@ -247,7 +247,7 @@ template<typename ..._Actions, typename ..._Data>
 inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_client_receive(connection& socket)
 {
     char buffer[RECV_BLOCK_SIZE] {0};
-    size_t n_bytes = ::recv(socket.getSocket(), buffer, RECV_BLOCK_SIZE, MSG_DONTWAIT);
+    ssize_t n_bytes = ::recv(socket.get_socket(), buffer, RECV_BLOCK_SIZE, MSG_DONTWAIT);
     if (n_bytes < 0)
     {
         // recv error
@@ -276,12 +276,12 @@ inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_w
     /* should not happen but if data is empty, clear socket write flag */
     if (socket->data.send_buffer.empty())
     {
-        this->handler.socket_want_write(socket->getSocket(), false);
+        this->handler.socket_want_write(socket->get_socket(), false);
         return false;
     }
 
     // socket is available and has an empty send_buffer, try direct send and queue message tail if any
-    size_t n_bytes = ::send(socket->getSocket(), socket->data.send_buffer.front().c_str(), socket->data.send_buffer.front().size(), 0);
+    size_t n_bytes = ::send(socket->get_socket(), socket->data.send_buffer.front().c_str(), socket->data.send_buffer.front().size(), 0);
     if (n_bytes < 0)
     {
         // ::send error
@@ -297,7 +297,7 @@ inline bool tcp::_lib::socket_container<std::tuple<_Actions...>, _Data...>::on_w
     // data was sent entierly, pop first data in buffer and untoggle write flag
     socket->data.send_buffer.pop();
     if (socket->data.send_buffer.empty())
-        this->handler.socket_want_write(socket->getSocket(), false);
+        this->handler.socket_want_write(socket->get_socket(), false);
 
     return (false);
 }

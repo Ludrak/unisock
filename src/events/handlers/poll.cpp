@@ -24,6 +24,8 @@ inline void handler_impl<handler_types::POLL>::del_socket(int socket)
     auto it = std::find(this->sockets.begin(), this->sockets.end(), socket);
     if (it == this->sockets.end())
         return ;
+    // erase from socket_ptrs the element at same position as it from sockets
+    // since both vectors are always the same size and conserve respectively the order of contained sockets
     this->socket_ptrs.erase(std::next(this->socket_ptrs.begin(), it - this->sockets.begin()));
     this->sockets.erase(it);
 }

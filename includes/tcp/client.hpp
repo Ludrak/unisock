@@ -93,7 +93,7 @@ inline bool tcp::client<std::tuple<_Actions...>, _Data...>::connect(const std::s
     sock->data.type = _lib::connection_type::CLIENT;
     sock->data.address = { ip_address, port, family };
 
-    if (-1 == ::connect(sock->getSocket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
+    if (-1 == ::connect(sock->get_socket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("connect", errno);
         return (false);
@@ -114,7 +114,7 @@ inline bool tcp::client<std::tuple<_Actions...>, _Data...>::on_client_receive(co
     if (disconnected)
     {
         this->template execute<actions::CLOSED>(socket);
-        this->delete_socket(socket.getSocket());
+        this->delete_socket(socket.get_socket());
     }
     return (disconnected);
 }

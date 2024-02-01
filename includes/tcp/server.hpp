@@ -95,13 +95,13 @@ inline bool tcp::server<std::tuple<_Actions...>, _Data...>::listen(const std::st
     }
     sock->data.type = _lib::connection_type::SERVER;
     sock->data.address = { ip_address, port, family };
-    if (-1 == ::bind(sock->getSocket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
+    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
         return (false);
     }
     
-    if (-1 == ::listen(sock->getSocket(), 10))
+    if (-1 == ::listen(sock->get_socket(), 10))
     {
         this->template execute<actions::ERROR>("listen", errno);
         return (false);
@@ -121,7 +121,7 @@ inline bool    tcp::server<std::tuple<_Actions...>, _Data...>::on_endpoint_recei
     // socklen_t           s_len = sizeof(s_addr);
     char        addr[inet_address::ADDRESS_SIZE] { 0 };
     socklen_t   addr_size = inet_address::ADDRESS_SIZE;
-    int client = ::accept(socket.getSocket(), reinterpret_cast<sockaddr*>(addr), &addr_size);//reinterpret_cast<sockaddr*>(&s_addr), &s_len);
+    int client = ::accept(socket.get_socket(), reinterpret_cast<sockaddr*>(addr), &addr_size);//reinterpret_cast<sockaddr*>(&s_addr), &s_len);
     if (client < 0)
     {
         // accept error
@@ -152,7 +152,7 @@ inline bool tcp::server<std::tuple<_Actions...>, _Data...>::on_client_receive(co
     if (disconnected)
     {
         this->template execute<actions::DISCONNECT>(socket);
-        this->delete_socket(socket.getSocket());
+        this->delete_socket(socket.get_socket());
     }
     return (disconnected);
 }

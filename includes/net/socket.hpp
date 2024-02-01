@@ -21,9 +21,12 @@ class socket_wrap
         socket_wrap(events::_lib::isocket_container* container, int socket);
         socket_wrap(events::_lib::isocket_container* container, const int domain, const int type, const int protocol);
 
-        int     getSocket() const;
+        int     get_socket() const;
 
         void    close();
+
+        bool    setsockopt(int level, int option_name, const void* option_value, socklen_t option_len) const;
+        bool    getsockopt(int level, int option_name, void* option_value, socklen_t* option_len) const;
 
         events::_lib::isocket_container*  get_container() const;
 

@@ -64,7 +64,7 @@ if (build-examples)
 
 	include_directories(./examples/includes)
 
-	# Basic tcp server 
+	# Basic tcp client 
 	add_executable(tcp-server
 		examples/tcp-server/main.cpp
 	)
@@ -81,6 +81,12 @@ if (build-examples)
 		examples/udp-server/main.cpp
 	)
 	target_link_libraries(udp-server cppsockets)
+
+	# Basic udp client
+	add_executable(udp-client
+		examples/udp-client/main.cpp
+	)
+	target_link_libraries(udp-client cppsockets)
 
 endif(build-examples)
 

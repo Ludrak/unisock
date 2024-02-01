@@ -22,17 +22,29 @@ socket_wrap::socket_wrap(events::_lib::isocket_container* container, const int d
 
 void    socket_wrap::close()
 {
-    if (_sock > 0)
-    {
-        ::close(_sock);
-        _sock = -1;
-    }
+    if (_sock < 0)
+        return;
+    ::close(_sock);
+    _sock = -1;
 }
 
-int     socket_wrap::getSocket() const
+int     socket_wrap::get_socket() const
 {
     return (_sock);
 }
+
+
+
+bool    socket_wrap::setsockopt(int level, int option_name, const void* option_value, socklen_t option_len) const
+{
+    return (0 == ::setsockopt(this->_sock, level, option_name, option_value, option_len));
+}
+
+bool    socket_wrap::getsockopt(int level, int option_name, void* option_value, socklen_t* option_len) const
+{
+    return (0 == ::getsockopt(this->_sock, level, option_name, option_value, option_len));
+}
+
 
 
 events::_lib::isocket_container*  socket_wrap::get_container() const

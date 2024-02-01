@@ -55,7 +55,7 @@ bool    single_poll_impl<handler_types::POLL>(const unisock::_lib::socket_wrap& 
     struct pollfd poll_data;
     poll_data.events = events;
     poll_data.revents = 0;
-    poll_data.fd = socket.getSocket();
+    poll_data.fd = socket.get_socket();
 
     int n_changes = ::poll(&poll_data, 1, timeout);
 
