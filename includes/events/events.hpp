@@ -121,9 +121,11 @@ class socket_container : public isocket_container
         socket_type*    make_socket(_Args&&... args)
         {
             socket_type sock { this, std::forward<_Args>(args)... };
+            if (sock.get_socket() == -1)
+                return nullptr; // socket error
             auto insert = this->sockets.insert(std::make_pair(sock.get_socket(), sock));
             if (!insert.second)
-                return nullptr; // insert error
+                return nullptr; // insert error, should not happen unless socket was not previously deleted
             this->handler.add_socket(sock.get_socket(), &insert.first->second);
             return (&insert.first->second);
         }

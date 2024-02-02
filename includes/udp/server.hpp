@@ -104,7 +104,7 @@ inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(co
         return false;
     }
     sock->data.address = { ip_address, port, family };
-    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
+    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
         return (false);
@@ -127,7 +127,7 @@ inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen_mu
         return false;
     }
     sock->data.address = { interface, port, interface_family };
-    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
+    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
         return (false);
@@ -159,7 +159,7 @@ inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen_br
         return false;
     }
     sock->data.address = { interface, port, interface_family };
-    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
+    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
         return (false);

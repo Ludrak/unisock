@@ -13,3 +13,6 @@
 
 #define UNISOCK_UDP_NAMESPACE_START namespace udp {
 #define UNISOCK_UDP_NAMESPACE_END   }
+
+#define UNISOCK_RAW_NAMESPACE_START namespace raw {
+#define UNISOCK_RAW_NAMESPACE_END   }

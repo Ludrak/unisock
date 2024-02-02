@@ -84,6 +84,10 @@ namespace actions
     struct ERROR {};
 };
 
+
+UNISOCK_LIB_NAMESPACE_START
+
+
 /* predefinition of tcp::server<...> for socket_data */
 template<typename ..._Args>
 class server_impl;
@@ -92,12 +96,10 @@ class server_impl;
 template<typename ..._Args>
 class client_impl;
 
-
-UNISOCK_LIB_NAMESPACE_START
-
 /* predefinition of tcp::_lib::socket_conainer<...> for socket_data */
 template<typename ..._Data>
 class common_impl;
+
 
 /* socket data for each tcp socket */
 template<typename ..._Data>
@@ -110,9 +112,14 @@ class socket_data
         _lib::connection_type   type;
         std::queue<std::string> send_buffer;
 
-        // friend class socket_container<_Data...>;
-        // friend class server_impl<_Data...>;
-        // friend class client_impl<_Data...>;
+        // template<typename ..._Actions>
+        // friend class common_impl<std::tuple<_Actions...>, _Data...>;
+        
+        // template<typename ..._Actions>
+        // friend class server_impl<std::tuple<_Actions...>, _Data...>;
+        
+        // template<typename ..._Actions>
+        // friend class client_impl<std::tuple<_Actions...>, _Data...>;
 };
 
 UNISOCK_LIB_NAMESPACE_END

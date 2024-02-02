@@ -97,7 +97,7 @@ int send(const udp::socket<_Data...>& socket, const std::string& message)
     if (!available)
         return (send_result::UNAVAILABLE);
     
-    ssize_t n_bytes = sendto(socket.get_socket(), message.c_str(), message.size(), 0, socket.data.address.template to_address<sockaddr>(), socket.data.address.size());
+    ssize_t n_bytes = sendto(socket.get_socket(), message.c_str(), message.size(), 0, socket.data.address.template to<sockaddr>(), socket.data.address.size());
     if (n_bytes < 0)
         return (send_result::ERROR);
     else if (n_bytes < static_cast<ssize_t>(message.size()))
@@ -153,8 +153,9 @@ inline bool    udp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::on_rec
     char  buffer[RECV_BLOCK_SIZE];
 
     // TODO: change this when refractoring inet_address
-    char        addr[inet_address::ADDRESS_SIZE];
-    socklen_t   addr_len = inet_address::ADDRESS_SIZE;
+    struct sockaddr_storage addr;
+    socklen_t               addr_len = sizeof(addr);
+    memset(&addr, 0, addr_len);
 
     size_t n_bytes = ::recvfrom(socket->get_socket(), buffer, RECV_BLOCK_SIZE, 0, reinterpret_cast<sockaddr*>(&addr), &addr_len);
     if (n_bytes < 0)
@@ -163,7 +164,7 @@ inline bool    udp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::on_rec
         return (false);
     }
 
-    inet_address client_address { addr, addr_len };
+    inet_address client_address { addr };
     this->template execute<actions::MESSAGE>(*socket, client_address, buffer, n_bytes);
     return (false);
 }
@@ -182,7 +183,7 @@ inline bool    udp::_lib::common_impl<std::tuple<_Actions...>, _Data...>::on_wri
                          socket->data.send_buffer.front().c_str(),
                          socket->data.send_buffer.size(),
                          0,
-                         socket->data.address.template to_address<sockaddr>(),
+                         socket->data.address.template to<sockaddr>(),
                          socket->data.address.size());
 
     // error occurred on sendto

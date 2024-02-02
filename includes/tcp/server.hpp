@@ -118,7 +118,7 @@ inline bool tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(co
     }
     sock->data.type = _lib::connection_type::SERVER;
     sock->data.address = { ip_address, port, family };
-    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
+    if (-1 == ::bind(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
         return (false);
@@ -142,9 +142,11 @@ inline bool    tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::on_end
 {
     // struct sockaddr_in  s_addr {};
     // socklen_t           s_len = sizeof(s_addr);
-    char        addr[inet_address::ADDRESS_SIZE] { 0 };
-    socklen_t   addr_size = inet_address::ADDRESS_SIZE;
-    int client = ::accept(socket.get_socket(), reinterpret_cast<sockaddr*>(addr), &addr_size);//reinterpret_cast<sockaddr*>(&s_addr), &s_len);
+    struct sockaddr_storage addr;
+    socklen_t               addr_len = sizeof(addr);
+    memset(&addr, 0, addr_len);
+
+    int client = ::accept(socket.get_socket(), reinterpret_cast<sockaddr*>(&addr), &addr_len);//reinterpret_cast<sockaddr*>(&s_addr), &s_len);
     if (client < 0)
     {
         // accept error
@@ -160,7 +162,7 @@ inline bool    tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::on_end
         return false;
     }
     client_sock->data.type = _lib::connection_type::CLIENT;
-    client_sock->data.address = { addr, addr_size };
+    client_sock->data.address = { addr };
 
     this->template execute<actions::CONNECT>(static_cast<tcp::connection<_Data...>&>(*client_sock));
     return (false);

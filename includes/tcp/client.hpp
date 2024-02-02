@@ -108,14 +108,13 @@ inline bool tcp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::connect(c
     sock->data.type = _lib::connection_type::CLIENT;
     sock->data.address = { ip_address, port, family };
 
-    if (-1 == ::connect(sock->get_socket(), sock->data.address.template to_address<sockaddr>(), sock->data.address.size()))
+    if (-1 == ::connect(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("connect", errno);
         return (false);
     }
 
     this->template execute<actions::CONNECTED>(*sock);
-
     return (true);
 }
 

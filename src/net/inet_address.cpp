@@ -5,23 +5,20 @@ using namespace unisock;
 
 inet_address::inet_address()
 {
-	memset(_address, 0, ADDRESS_SIZE);
+	memset(&_address, 0, sizeof(_address));
 }
 
 
 inet_address::inet_address(const inet_address& other)
 {
-	memcpy(_address, other._address, ADDRESS_SIZE);
+	memcpy(&_address, &other._address, sizeof(_address));
 }
 
 
-inet_address::inet_address(const char* address_data, const size_t address_size)
+inet_address::inet_address(const sockaddr_storage& addr)
 : inet_address()
 {
-	if (address_size > ADDRESS_SIZE)
-		throw std::logic_error("address is too big for address buffer, maximum is " + std::to_string(ADDRESS_SIZE) + " bytes");
-
-	memcpy(_address, address_data, address_size);
+	memcpy(&_address, &addr, sizeof(_address));
 }
 
 
@@ -54,22 +51,21 @@ inet_address::inet_address(const std::string& hostname, const int port, const sa
 	if (n_retries == 0 || res == nullptr)
 		throw std::logic_error(std::string("Unable to retrieve host ip address: ") + gai_strerror(err) + ": " + std::to_string(err));
 
-	if (ADDRESS_SIZE < res->ai_addrlen)
-		throw std::logic_error("address is too big for address buffer, maximum is " + std::to_string(ADDRESS_SIZE) + " bytes");
+	if (res->ai_addrlen > sizeof(_address))
+		throw std::logic_error("address is too big for address buffer, maximum is " + std::to_string(sizeof(_address)) + " bytes");
 
 	if (res->ai_addrlen < sizeof(sockaddr_in))
 		throw std::logic_error("address struct is too small to contain port, min size is sizeof(sockaddr_in) = 16bytes");
-
 	reinterpret_cast<sockaddr_in*>(res->ai_addr)->sin_port = htons(port);
 
-	std::memcpy(_address, res->ai_addr, res->ai_addrlen);
+	std::memcpy(&_address, res->ai_addr, res->ai_addrlen);
 
 }
 
 
 inet_address&   	inet_address::operator=(const inet_address& other)
 {
-	memcpy(_address, other._address, ADDRESS_SIZE);
+	memcpy(&_address, &other._address, sizeof(_address));
 	return (*this);
 }
 
@@ -83,7 +79,7 @@ std::string         inet_address::hostname() const
 	int n_retries = MAX_HOST_RESOLVE_RETRIES;
 	do
 	{
-		err = getnameinfo(to_address<sockaddr>(), size(), hostname_buffer, HOSTNAME_BUFFER_SIZE, nullptr, 0, 0);
+		err = getnameinfo(to<sockaddr>(), size(), hostname_buffer, HOSTNAME_BUFFER_SIZE, nullptr, 0, 0);
 
 		if (err == 0)
 			break ;
@@ -103,7 +99,7 @@ std::string         inet_address::ip() const
 {
 	char ip[IP_ADDRESS_BUFFER_SIZE] { 0 };
 
-	if (nullptr == inet_ntop(family(), &to_address<sockaddr_in>()->sin_addr, ip, size()))
+	if (nullptr == inet_ntop(family(), &to<sockaddr_in>()->sin_addr, ip, size()))
 		return "";
 	return std::string(ip);
 }
@@ -112,18 +108,18 @@ std::string         inet_address::ip() const
 int                 inet_address::port() const
 {
 	if (size() >= sizeof(sockaddr_in))
-		return (ntohs(*reinterpret_cast<const int*>(_address + offsetof(sockaddr_in, sin_port))));
+		return (ntohs(*reinterpret_cast<const int*>(&_address + offsetof(sockaddr_in, sin_port))));
 	return (0);
 }
 
 
 size_t              inet_address::size() const
 {
-	return (to_address<sockaddr>()->sa_len);
+	return (to<sockaddr>()->sa_len);
 }
 
 
 sa_family_t         inet_address::family() const
 {
-	return (*reinterpret_cast<const sa_family_t*>(_address + offsetof(sockaddr, sa_family)));
+	return (to<sockaddr>()->sa_family);
 }
