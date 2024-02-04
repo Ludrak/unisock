@@ -8,18 +8,18 @@ int main()
 {
     udp::server server {};
 
-    server.on<LISTENING>( [](const udp::socket<>& socket){ 
-        std::cout << "listening on " << socket.data.address.hostname() << std::endl;
-    });
+    // server.on<LISTENING>( [](const udp::socket<>& socket){ 
+    //     std::cout << "listening on " << socket.data.address.hostname() << std::endl;
+    // });
 
-    server.on<CLOSED>( [](const udp::socket<>& socket){ 
-        std::cout << "endpoint closed from " << socket.data.address.hostname() << std::endl;
-    });
+    // server.on<CLOSED>( [](const udp::socket<>& socket){ 
+    //     std::cout << "endpoint closed from " << socket.data.address.hostname() << std::endl;
+    // });
 
 
-    server.on<MESSAGE>( [](const udp::socket<>& socket, const inet_address& client_address, const char* message, size_t size){ 
-        std::cout << "received from " << socket.data.address.hostname() << ": [" << client_address.hostname() << "]: '" << std::string(message, size) << "'" << std::endl;
-    });
+    // server.on<MESSAGE>( [](const udp::socket<>& socket, const inet_address& client_address, const char* message, size_t size){ 
+    //     std::cout << "received from " << socket.data.address.hostname() << ": [" << client_address.hostname() << "]: '" << std::string(message, size) << "'" << std::endl;
+    // });
 
 
     server.on<ERROR> ( [](const std::string& func, int error) {

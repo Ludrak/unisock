@@ -77,7 +77,7 @@ class client_impl<std::tuple<_Actions...>, _Data...> :
 
         /* makes the client try connecting to the provided address, returns false on error */
         /* errno of the error can be retrieved in actions::ERROR    */
-        virtual bool    connect(const std::string& ip_address, const int port, const sa_family_t family = AF_INET);
+        virtual bool    connect(const std::string& hostname, const int port, const sa_family_t family = AF_INET);
 
     private:
         bool            on_client_receive(connection<_Data...>& socket) override;
@@ -97,7 +97,7 @@ class client_impl<std::tuple<_Actions...>, _Data...> :
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool tcp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::connect(const std::string& ip_address, const int port, const sa_family_t family)
+inline bool tcp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::connect(const std::string& hostname, const int port, const sa_family_t family)
 {
     auto* sock = this->make_socket(family, SOCK_STREAM, 0);
     if (sock == nullptr)
@@ -106,7 +106,15 @@ inline bool tcp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::connect(c
         return false;
     }
     sock->data.type = _lib::connection_type::CLIENT;
-    sock->data.address = { ip_address, port, family };
+
+    addrinfo_result result = inet_address::addrinfo(sock->data.address, hostname, family);
+    if (result != addrinfo_result::SUCCESS)
+    {
+        this->template execute<actions::ERROR>("getaddrinfo", errno);
+        this->delete_socket(sock->get_socket());
+        return false;
+    }
+    sock->data.address.template to<sockaddr_in>()->sin_port = htons(port);    
 
     if (-1 == ::connect(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {

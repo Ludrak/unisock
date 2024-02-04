@@ -12,27 +12,27 @@ int main()
     tcp::server server = tcp::server();
 
     /* setting up hooks for events on that server */
-    server.on<LISTENING> ( [](auto& connection) {
-        std::cout << "listening on " << connection.data.address.hostname() << " ip " << connection.data.address.ip() << " " << connection.data.address.port() << std::endl;
-    } );
+    // server.on<LISTENING> ( [](auto& connection) {
+    //     // std::cout << "listening on " << connection.data.address.hostname() << " ip " << connection.data.address.ip() << " " << connection.data.address.port() << std::endl;
+    // } );
 
-    server.on<CLOSED> ( [](auto& connection) {
-        std::cout << "endpoint closed from " << connection.data.address.hostname() << std::endl;
-    } );
-
-
-    server.on<CONNECT> ( [](auto& connection) {
-        std::cout << "[+] client connected (" << connection.data.address.hostname() << ")" << std::endl;
-    } );
-
-    server.on<DISCONNECT> ( [](auto& connection) {
-        std::cout << "[-] client disconnected (" << connection.data.address.hostname() << ")" << std::endl;
-    } );
+    // server.on<CLOSED> ( [](auto& connection) {
+    //     // std::cout << "endpoint closed from " << connection.data.address.hostname() << std::endl;
+    // } );
 
 
-    server.on<MESSAGE> ( [](auto& client, const char* message, size_t size) {
-        std::cout << "<" << client.data.address.hostname() << ">: '" << std::string(message, size) << "'" << std::endl;
-    } );
+    // server.on<CONNECT> ( [](auto& connection) {
+    //     // std::cout << "[+] client connected (" << connection.data.address.hostname() << ")" << std::endl;
+    // } );
+
+    // server.on<DISCONNECT> ( [](auto& connection) {
+    //     // std::cout << "[-] client disconnected (" << connection.data.address.hostname() << ")" << std::endl;
+    // } );
+
+
+    // server.on<MESSAGE> ( [](auto& client, const char* message, size_t size) {
+    //     // std::cout << "<" << client.data.address.hostname() << ">: '" << std::string(message, size) << "'" << std::endl;
+    // } );
 
 
     server.on<ERROR> ( [](const std::string& func, int error) {

@@ -9,14 +9,19 @@ project(libunisock VERSION 0.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_options(-Wall -Wextra -Wpedantic -Werror)
-
-
 #
 #  CMake options
 #
+option(debug			"build the library in debug mode" OFF)
 option(build-examples	"Builds the list of examples in ./examples" OFF)
 option(use-ssl			"Enables tls features, requires OpenSSL library, paths to it must be defined below in the SSL section" OFF)
+
+
+if (debug)
+	add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+else()
+	add_compile_options(-Wall -Wextra -Wpedantic -Werror -O3)
+endif(debug)
 
 #
 #	SSL

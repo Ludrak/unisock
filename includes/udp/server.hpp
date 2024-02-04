@@ -95,7 +95,7 @@ class server_impl<std::tuple<_Actions...>, _Data...>
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(const std::string& ip_address, const int port, const sa_family_t family)
+inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(const std::string& hostname, const int port, const sa_family_t family)
 {
     auto* sock = this->make_socket(family, SOCK_DGRAM, 0);
     if (sock == nullptr)
@@ -103,7 +103,17 @@ inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(co
         this->template execute<actions::ERROR>("socket", errno);
         return false;
     }
-    sock->data.address = { ip_address, port, family };
+    // sock->data.address = { hostname, port, family };
+
+    addrinfo_result result = inet_address::addrinfo(sock->data.address, hostname, family);
+    if (result != addrinfo_result::SUCCESS)
+    {
+        this->template execute<actions::ERROR>("getaddrinfo", errno);
+        this->delete_socket(sock->get_socket());
+        return false;
+    }
+    sock->data.address.template to<sockaddr_in>()->sin_port = htons(port);    
+
     if (-1 == ::bind(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
@@ -126,7 +136,16 @@ inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen_mu
         this->template execute<actions::ERROR>("socket", errno);
         return false;
     }
-    sock->data.address = { interface, port, interface_family };
+
+    addrinfo_result result = inet_address::addrinfo(sock->data.address, interface, interface_family);
+    if (result != addrinfo_result::SUCCESS)
+    {
+        this->template execute<actions::ERROR>("getaddrinfo", errno);
+        this->delete_socket(sock->get_socket());
+        return false;
+    }
+    sock->data.address.template to<sockaddr_in>()->sin_port = htons(port);    
+
     if (-1 == ::bind(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
@@ -135,7 +154,7 @@ inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen_mu
 
     struct ip_mreq mreq;
     mreq.imr_multiaddr.s_addr = inet_addr(multiaddr.c_str());
-    mreq.imr_interface.s_addr = *reinterpret_cast<const in_addr_t*>(sock->data.address.in_addr());
+    mreq.imr_interface.s_addr = *reinterpret_cast<const in_addr_t*>(&sock->data.address.template to<sockaddr_in>()->sin_addr);
     if (!sock->setsockopt(IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq)))
     {
         this->template execute<actions::ERROR>("setsockopt", errno);
@@ -158,7 +177,17 @@ inline bool udp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen_br
         this->template execute<actions::ERROR>("socket", errno);
         return false;
     }
-    sock->data.address = { interface, port, interface_family };
+
+    addrinfo_result result = inet_address::addrinfo(sock->data.address, interface, interface_family);
+    if (result != addrinfo_result::SUCCESS)
+    {
+        this->template execute<actions::ERROR>("getaddrinfo", errno);
+        this->delete_socket(sock->get_socket());
+        return false;
+    }
+    sock->data.address.template to<sockaddr_in>()->sin_port = htons(port);    
+
+
     if (-1 == ::bind(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);

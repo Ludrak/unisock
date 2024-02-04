@@ -89,7 +89,11 @@ class client_impl<std::tuple<_Actions...>, _Data...>
 template<typename ..._Actions, typename ..._Data>
 inline bool udp::_lib::client_impl<std::tuple<_Actions...>, _Data...>::target_server(const std::string& address, const int port, const sa_family_t family)
 {
-    return (target_server(inet_address(address, port, family)));
+    inet_address addr;
+    inet_address::addrinfo(addr, address, family);
+    // addr.template set<offsetof(sockaddr_in, sin_port)>(htons(port));
+    addr.template to<sockaddr_in>()->sin_port = htons(port);
+    return (target_server(addr));
 }
 
 template<typename ..._Actions, typename ..._Data>

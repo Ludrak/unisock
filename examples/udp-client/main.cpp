@@ -8,7 +8,7 @@ using namespace udp::actions;
 int main()
 {
     /* basic udp send without client/server or event polling */
-    inet_address server_addr = inet_address("127.0.0.1", 8000, AF_INET);
+    inet_address server_addr = inet_address::from("127.0.0.1", 8000, AF_INET);
     size_t result = raw::send_to(server_addr, "Trying connection !");
     if (result != raw::send_result::SUCCESS)
     {
@@ -22,7 +22,8 @@ int main()
         // send to all targetted servers
         client.send("Thanks for your message : " + std::string(message, size) + "\n");
         // send to specific socket
-        udp::send(socket, "for you " + server_address.hostname());
+        (void)server_address;
+        udp::send(socket, "for you ");
     });
 
 

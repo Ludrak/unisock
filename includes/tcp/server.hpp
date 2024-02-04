@@ -87,7 +87,7 @@ class server_impl<std::tuple<_Actions...>, _Data...>
 
         /* makes the server start listening, returns false on error */
         /* errno of the error can be retrieved in actions::ERROR    */
-        virtual bool listen(const std::string& ip_address, const int port, const sa_family_t family = AF_INET);
+        virtual bool listen(const std::string& hostname, const int port, const sa_family_t family = AF_INET);
 
     private:
         bool            on_endpoint_receive(connection<_Data...>& socket);
@@ -108,8 +108,10 @@ class server_impl<std::tuple<_Actions...>, _Data...>
 
 
 template<typename ..._Actions, typename ..._Data>
-inline bool tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(const std::string& ip_address, const int port, const sa_family_t family)
+inline bool tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(const std::string& hostname, const int port, const sa_family_t family)
 {
+    assert(family == AF_INET || family == AF_INET6);
+
     auto* sock = this->make_socket(family, SOCK_STREAM, 0);
     if (sock == nullptr)
     {
@@ -117,16 +119,26 @@ inline bool tcp::_lib::server_impl<std::tuple<_Actions...>, _Data...>::listen(co
         return false;
     }
     sock->data.type = _lib::connection_type::SERVER;
-    sock->data.address = { ip_address, port, family };
+    addrinfo_result result = inet_address::addrinfo(sock->data.address, hostname, family);
+    if (result != addrinfo_result::SUCCESS)
+    {
+        this->template execute<actions::ERROR>("getaddrinfo", errno);
+        this->delete_socket(sock->get_socket());
+        return false;
+    }
+    sock->data.address.template to<sockaddr_in>()->sin_port = htons(port);    
+
     if (-1 == ::bind(sock->get_socket(), sock->data.address.template to<sockaddr>(), sock->data.address.size()))
     {
         this->template execute<actions::ERROR>("bind", errno);
+        this->delete_socket(sock->get_socket());
         return (false);
     }
     
     if (-1 == ::listen(sock->get_socket(), 10))
     {
         this->template execute<actions::ERROR>("listen", errno);
+        this->delete_socket(sock->get_socket());
         return (false);
     }
 
