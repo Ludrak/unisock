@@ -27,7 +27,7 @@ class handler : public _lib::handler_impl<unisock::events::handler_type>
 {
     public:
         handler() = default;
-        ~handler() = default;
+        virtual ~handler() = default;
 
         template<typename ..._Data>
         void    add_socket(int socket, unisock::_lib::socket<_Data...>* sptr)

@@ -8,7 +8,7 @@ UNISOCK_EVENTS_NAMESPACE_START
 UNISOCK_LIB_NAMESPACE_START
 
 
-inline void handler_impl<handler_types::POLL>::add_socket(int socket, unisock::_lib::socket_wrap* ref)
+void handler_impl<handler_types::POLL>::add_socket(int socket, unisock::_lib::socket_wrap* ref)
 {
     struct pollfd data;
     data.events = POLLIN;
@@ -19,7 +19,7 @@ inline void handler_impl<handler_types::POLL>::add_socket(int socket, unisock::_
 }
 
 
-inline void handler_impl<handler_types::POLL>::del_socket(int socket)
+void handler_impl<handler_types::POLL>::del_socket(int socket)
 {
     auto it = std::find(this->sockets.begin(), this->sockets.end(), socket);
     if (it == this->sockets.end())
@@ -31,7 +31,7 @@ inline void handler_impl<handler_types::POLL>::del_socket(int socket)
 }
 
 
-inline void handler_impl<handler_types::POLL>::socket_want_read(int socket, bool active)
+void handler_impl<handler_types::POLL>::socket_want_read(int socket, bool active)
 {
     auto it = std::find(this->sockets.begin(), this->sockets.end(), socket);
     if (it == this->sockets.end())
@@ -43,7 +43,7 @@ inline void handler_impl<handler_types::POLL>::socket_want_read(int socket, bool
 }
 
 
-inline void handler_impl<handler_types::POLL>::socket_want_write(int socket, bool active)
+void handler_impl<handler_types::POLL>::socket_want_write(int socket, bool active)
 {
     auto it = std::find(this->sockets.begin(), this->sockets.end(), socket);
     if (it == this->sockets.end())

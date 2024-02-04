@@ -18,6 +18,8 @@ template<>
 class handler_impl<handler_types::POLL> : public handler_impl_base
 {
     public:
+        virtual ~handler_impl<handler_types::POLL>() = default;
+
         std::vector<pollfd>                         sockets;
         std::vector<unisock::_lib::socket_wrap*>    socket_ptrs;
 
