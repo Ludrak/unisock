@@ -16,10 +16,28 @@ inet_address::inet_address(const inet_address& other)
 
 
 inet_address::inet_address(const sockaddr_storage& addr)
-: inet_address()
 {
 	memcpy(&_address, &addr, sizeof(_address));
 }
+
+
+// constructor from struct sockaddr
+inet_address::inet_address(const sockaddr* addr, size_t addr_len)
+: inet_address()
+{
+	memcpy(&_address, addr, addr_len);
+}
+
+// constructor for IPv4 / IPv6 addresses
+inet_address::inet_address(const std::string& host, in_port_t port, bool use_IPv6)
+: inet_address()
+{
+	addrinfo_result result = inet_address::addrinfo(_address, host, use_IPv6 ? AF_INET6 : AF_INET);
+	if (result != addrinfo_result::SUCCESS)
+		throw std::logic_error("unable to retrieve host address");
+	this->to<sockaddr_in>()->sin_port = htons(port);
+}
+
 
 
 inet_address&   	inet_address::operator=(const inet_address& other)
@@ -27,6 +45,7 @@ inet_address&   	inet_address::operator=(const inet_address& other)
 	memcpy(&_address, &other._address, sizeof(_address));
 	return (*this);
 }
+
 
 
 std::string         inet_address::get_ip(const inet_address& address)

@@ -46,6 +46,54 @@ enum class  nameinfo_result {
 
 
 
+/* get sockaddr struct type by address family */
+template<sa_family_t _AddressFamily>
+struct address_type_of
+    {   // default to sockaddr since all addresses families can be interpreted as sockaddr
+        using type = sockaddr;
+    };
+
+// af_inet
+template<>
+struct address_type_of<AF_INET>
+    { using type = sockaddr_in; };
+
+// af_inet6
+template<>
+struct address_type_of<AF_INET6>
+    { using type = sockaddr_in6; };
+
+// TODO: implement more sockaddr structs
+
+// type alias
+template<sa_family_t _AddressFamily>
+using address_type_of_t = typename address_type_of<_AddressFamily>::type;
+
+
+
+/* get address family by sockaddr struct type */
+template<typename _AddressType>
+struct address_family_of
+    {   // default to AF_UNSPEC
+        static constexpr sa_family_t value = AF_UNSPEC;
+    };
+
+// af_inet
+template<>
+struct address_family_of<sockaddr_in>
+    { static constexpr sa_family_t value = AF_INET; };
+
+// af_inet6
+template<>
+struct address_family_of<sockaddr_in6>
+    { static constexpr sa_family_t value = AF_INET6; };
+
+// TODO: implement more sockaddr structs
+
+// type alias
+template<typename _AddressType>
+using address_family_of_v = typename address_family_of<_AddressType>::value;
+
 
 class inet_address
 {
@@ -64,6 +112,13 @@ class inet_address
         // constructor from sockaddr_storage
         inet_address(const sockaddr_storage& addr);
 
+        // constructor from struct sockaddr
+        inet_address(const sockaddr* addr, size_t addr_len);
+
+        // constructor for IPv4 / IPv6 addresses
+        // ! this constructor can throw if host could not be resolved
+        inet_address(const std::string& host, in_port_t port, bool use_IPv6 = false);
+
 
         inet_address&   operator=(const inet_address& other);
 
@@ -75,29 +130,28 @@ class inet_address
 
 
 
-
         /* inet_address::to<...>                                                      */
         /* use address.to<sockaddr_type> to reinterpret the inner address struct as   */
         /* the wanted address struct type. this call checks for family in sa for all  */
         /* types except sockaddr, this insures that if the pointer is not nullptr,    */
         /* the address family corresponds to the required struct type.                */
-    private:
+
         // generic definition for each sa_family_t address families
-        template<sa_family_t _AddressFamily, typename _AddressType>
-        _AddressType*       _to()
+        template<typename _AddressType>
+        _AddressType*       to()
         {
             // checks for family
-            if (_AddressFamily != family())
+            if (address_family_of<_AddressType>::value != family())
                 return (nullptr);
             
             return (reinterpret_cast<_AddressType*>(&_address));
         }
 
-        // const version of _to<_AddressFamily, _AddressType>()
-        template<sa_family_t _AddressFamily, typename _AddressType>
-        const _AddressType* _to() const
+        // const version of to<_AddressFamily, _AddressType>()
+        template<typename _AddressType>
+        const _AddressType* to() const
         {
-            if (_AddressFamily != family())
+            if (address_family_of<_AddressType>::value != family())
                 return (nullptr);
             
             return (reinterpret_cast<const _AddressType*>(&_address));
@@ -108,37 +162,17 @@ class inet_address
         // getnameinfo should return an appropriate error,
         // it also applies to other callers like callers like bind, recvfrom, sendto, etc...
         template<>
-        struct sockaddr*        _to<AF_UNSPEC, struct sockaddr>()
+        struct sockaddr*        to<struct sockaddr>()
         {
             return (reinterpret_cast<struct sockaddr*>(&_address));
         }
 
-        // const version of _to<AF_UNSPEC, struct sockaddr>
+        // const version of to<struct sockaddr>
         template<>
-        const struct sockaddr*  _to<AF_UNSPEC, struct sockaddr>() const
+        const struct sockaddr*  to<struct sockaddr>() const
         {
             return (reinterpret_cast<const struct sockaddr*>(&_address));
         }
-
-    public:
-        /* public bindings to inet_address::_to<...> handlers           */
-        /* these wraps the correct AF_ number for each sockaddr type    */
-        template<typename _AddressType>
-        _AddressType*       to() { return (this->_to<AF_UNSPEC, _AddressType>()); }
-        template<typename _AddressType>
-        const _AddressType* to() const { return (this->_to<AF_UNSPEC, _AddressType>()); }
-
-        // reinterpret as sockaddr_in*
-        template<>
-        sockaddr_in*        to<sockaddr_in>() { return (this->_to<AF_INET, sockaddr_in>()); }
-        template<>
-        const sockaddr_in*  to<sockaddr_in>() const { return (this->_to<AF_INET, sockaddr_in>()); }
-
-        // reinterpret as sockaddr_in6*
-        template<>
-        sockaddr_in6*       to<sockaddr_in6>() { return (this->_to<AF_INET6, sockaddr_in6>()); }
-        template<>
-        const sockaddr_in6* to<sockaddr_in6>() const { return (this->_to<AF_INET6, sockaddr_in6>()); }
 
 
 
@@ -186,9 +220,11 @@ class inet_address
         std::string         to_string() const;
 
     private:
+        // to_string helpers generic definition for each address family
         template<sa_family_t _AddressFamily>
         std::string     _to_string() const;
 
+        // to_string helpers specializations
         template<>  std::string _to_string<AF_INET>() const;
         template<>  std::string _to_string<AF_INET6>() const;
 
