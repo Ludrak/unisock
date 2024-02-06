@@ -1,7 +1,23 @@
+/**
+ * @file common.hpp
+ * @author ROBINO Luca
+ * 
+ * @brief   implements listener base for handeling sockets at any level
+ * 
+ * @details this listener class is a base for any higher protocol listener 
+ *          that can inherit this class and specify ways for creating, receiving, and sending on sockets
+ * 
+ * @version 1.0
+ * @date 2024-02-05
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #pragma once
 
-#include "net/socket.hpp"
-#include "net/inet_address.hpp"
+#include "socket/socket.hpp"
+#include "socket/socket_address.hpp"
 
 #include "events/events.hpp"
 #include "events/action_hanlder.hpp"
@@ -10,78 +26,179 @@
 #include <queue>
 #include <fcntl.h>
 
-UNISOCK_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace unisock {
 
-UNISOCK_RAW_NAMESPACE_START
 
-/* send / receive methods */
+/**
+ * @addindex
+ */
+namespace raw {
+
+/**
+ * @brief base send and recv method enum to specify raw::listener::_recv<method> and raw::listener::_send<method>
+ *
+ */
 enum method
 {
-    // receive
+    /**
+     * @brief uses **recv()** call (see [recv man page](https://man7.org/linux/man-pages/man2/recv.2.html))
+     */
     recv,
+
+    /**
+     * @brief uses **recvmsg()** call (see [recvmsg man page](https://man7.org/linux/man-pages/man2/recvmsg.2.html))
+     */
     recvmsg,
+
+    /**
+     * @brief uses **recvfrom()** call (see [recvfrom man page](https://man7.org/linux/man-pages/man2/recvfrom.2.html))
+     */
     recvfrom,
 
-    // send
+
+    /**
+     * @brief uses **send()** call (see [send man page](https://man7.org/linux/man-pages/man2/send.2.html))
+     */
     send,
+
+    /**
+     * @brief uses **sendmsg()** call (see [sendmsg man page](https://man7.org/linux/man-pages/man2/sendmsg.2.html))
+     */
     sendmsg,
+
+    /**
+     * @brief uses **sendto()** call (see [sendto man page](https://man7.org/linux/man-pages/man2/sendto.2.html))
+     */
     sendto,
 };
 
 
 // actions to be hooked to tcp server/client with .on(lambda())
+/**
+ * @brief   actions to be hooked on raw::listener or childrens of raw::listener
+ * 
+ * @details defines structs as tags for actions of action_handler,
+ *          this tags can be used on the on() and execute() members
+ *          of raw::listener and its childrens to enqueue actions or
+ *          execute queues of actions respectively
+ *          (the execute() member is a protected member of actions_handler
+ *          so it is only available when inheriting raw::listener or its childrens)
+ * 
+ * @ref raw::listener
+ * @ref raw::_lib::listener_impl
+ * 
+ * @ref events::_lib::action_handler
+ * @ref events::_lib::action_handler::on
+ * @ref events::_lib::action_handler::execute
+ */
+/**
+ * @addindex
+ */
 namespace actions
 {
-    /* RECEIVE HANDLERS (wrapping events received with recv, recvmsg, recvfrom)    */
-    /* Note: you can change the current way of receiving/sending                   */
-    /* data with the recv_method and send_method fields of listener                */
-
-    // socket received bytes (with recv)
-    // prototype: void  (socket* socket, const char* message, const size_t size);
+    /**
+     * @brief   socket received bytes with recv (see details for prototype)
+     * 
+     * @details this event will only be called if raw::listener instance has its **recv_method** field set to method::recv
+     * 
+     * @ref     raw::method::recv 
+     * 
+     * @note    hook prototype: ```void  (socket<>* socket, const char* message, const size_t size)```
+     */
     struct RECEIVED {};
 
-    // socket received message (with recvmsg)
-    // prototype: void  (socket* socket, const struct msghdr& message);
+    /**
+     * @brief socket received message with recvmsg (see details for prototype)
+     * 
+     * @details this event will only be called if raw::listener instance has its **recv_method** field set to method::recvmsg
+     * 
+     * @ref     raw::method::recvmsg 
+     * 
+     * @note    hook prototype: ```void  (socket* socket, const struct msghdr& message)```
+     */
     struct MESSAGE {};
 
-    // socket received packet (with recvfrom)
-    // prototype: void  (socket* socket, inet_address& address, const char* message, const size_t size);
+    /**
+     * @brief socket received packet with recvfrom (see details for prototype)
+     * 
+     * @details this event will only be called if raw::listener instance has its **recv_method** field set to method::recvfrom
+     * 
+     * @ref     raw::method::recvfrom 
+     * 
+     * @note    hook prototype: ```void  (socket* socket, socket_address& address, const char* message, const size_t size)```
+     */
     struct PACKET {};
 
-
-    // called when a socket is closed
-    // prototype: void  (socket* socket);
+    /**
+     * @brief called when a socket is closed (see details for prototype)
+     * 
+     * @note  hook prototype: ```void  (socket* socket)```
+     */
     struct CLOSED {};
 
-
-    // an error has occurred 
-    // prototype: void  (const std::string& function, int errno);
+    /**
+     * @brief called on error (see details for prototype)
+     * 
+     * @note  hook prototype: ```void  (const std::string& function, int errno)```
+     */
     struct ERROR {};
 };
 
-
-UNISOCK_LIB_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace _lib {
 
 
 /* predefinition of raw::_lib::socket_conainer<...> for socket_data */
+/**
+ * @brief listener impl
+ * 
+ * @tparam _Data 
+ */
 template<typename ..._Data>
 class listener_impl;
 
 
-/* socket data for each tcp socket */
+/**
+ * @brief raw::socket data type, base data type for unisock::raw
+ * 
+ * @tparam _Data 
+ */
 template<typename ..._Data>
 class socket_data 
 {
     public:
-        inet_address    address;
+        /**
+         * @brief address of the socket
+         * @note  this may be moved soon directly to socket
+         */
+        socket_address    address;
 
 
         // TODO: find a way to make this field private
         //       + change placeholder std::string type to a lighter byte array container
+        /**
+         * @brief string queue containing message to send to client.
+         * @note  needs to be hidden from user space
+         */
         std::queue<std::string> send_buffer;
 };
 
 /* listener actions for both client and server */
+/**
+ * @brief   raw::listener list of actions to specify raw::listener::on and raw::listener::execute
+ * @details used to define action_handler parent of raw::listener \n
+ *          defines a std::tuple to be expanded (using events::_lib::expand()) into the template parameter pack of
+ *          action_handler to specify its members on() and execute(), this insures that on() and execute()
+ *          are always valid calls with valid arguments, otherwise a compilation error occurs.
+ * 
+ * @tparam _Socket 
+ * @tparam _Actions 
+ */
 template<typename _Socket, typename ..._Actions>
 using listener_actions = std::tuple<
     // close handler:       void (const std::string& function, int errno)
@@ -96,9 +213,9 @@ using listener_actions = std::tuple<
     unisock::events::_lib::action<actions::RECEIVED,  
                                 std::function<void (_Socket*, const char *, size_t)> >,
 
-    // message handler:     void (socket* socket, const inet_address& address, const char* message, size_t size)
+    // message handler:     void (socket* socket, const socket_address& address, const char* message, size_t size)
     unisock::events::_lib::action<actions::PACKET,  
-                                std::function<void (_Socket*, const inet_address&, const char*, size_t)> >,
+                                std::function<void (_Socket*, const socket_address&, const char*, size_t)> >,
 
     // message handler:     void (socket* socket, const msghdr& message, size_t size)
     unisock::events::_lib::action<actions::MESSAGE,  
@@ -107,7 +224,8 @@ using listener_actions = std::tuple<
     _Actions...
 >;
 
-UNISOCK_LIB_NAMESPACE_END
+
+} // ******** namespace _lib
 
 
 
@@ -116,36 +234,87 @@ UNISOCK_LIB_NAMESPACE_END
 
 
 /* socket type for listener */
+/**
+ * @brief   socket type of raw::listener
+ * @details implements a basic socket with basic socket data (see unisock::raw::socket_data)
+ * 
+ * @tparam _Data additional data to add to the socket
+ * 
+ * @ref unisock::raw::_lib::socket_data
+ */
 template<typename ..._Data>
-using socket = typename unisock::_lib::socket<_Data..., raw::_lib::socket_data<_Data...>>;
+using socket = typename unisock::socket<_Data..., raw::_lib::socket_data<_Data...>>;
 
 
-/* definition of standart listener with no additionnal data */
+/**
+ * @brief definition of standart raw::listener
+ * 
+ * @details implements a listener_impl with empty additionnal actions (empty std::tuple<>)
+ * 
+ * @ref unisock::raw::_lib::listener_impl
+ */
 using listener = unisock::raw::_lib::listener_impl<std::tuple<>>;
 
 
 /* type alias to get a listener with some additionnal data  */
+/**
+ * @brief type alias to make a listener with some custom data infered to managed sockets
+ * 
+ * @tparam _SocketData  data types, sockets of this listener will publicly inherit those types.
+ */
 template<typename ..._SocketData>
 using listener_of = unisock::raw::_lib::listener_impl<std::tuple<>, _SocketData...>;
 
+
+/**
+ * @brief result enum of a send operation
+ *               
+ */
 enum send_result
 {
-    /* message successfully sent */
+    /**
+     * @brief message successfully sent
+     */
     SUCCESS,
 
-    /* sento returned an error, still available in errno */
+    /**
+     * @brief send/sento returned an error, still available in errno
+     */
     ERROR,
 
-    /* socket was not available for sending */
+    /**
+     * @brief socket was not available for writing 
+     */
     UNAVAILABLE,
 
-    /* message sent by sendto is incomplete, compare this with result >= INCOMPLETE */
-    /* the number of bytes sent is indicated by result - INCOMPLETE                 */
+    /**
+     * @brief message sent by send/sendto is incomplete for any values above INCOMPLETE
+     *       (compare result >= INCOMPLETE for check), the number of bytes sent can be retrieved with result - INCOMPLETE.
+     * 
+     */
     INCOMPLETE
 };
 
-
-size_t  send_to(const unisock::_lib::socket_wrap* sock, const inet_address& address, const std::string& message)
+/**
+ * @brief   sends a packet containing **message** to the specified **address**, using the socket pointed by **sock**
+ * @details this call tries to send a byte string indicated by **message** to the specified **address** using **sendto()**\n
+ *          before sending the message, the pointed socket is switched to non blocking mode, to be able to **sendto()** without blocking or polling single socket before, 
+ *          if socket was not available for writing, send_to will return send_result::UNAVAILABLE.\n\n
+ * 
+ *          If the sent message was not sent entierly (**sendto()** returned a size less than message.size()), the call returns send_result::INCOMPLETE + n_bytes_sent.\n 
+ *          This way, an incomplete packet may be checked by comparing `result > send_result::INCOMPLETE` \n 
+ *          and the number of bytes sent retrieved in `result - send_result::INCOMPLETE`.
+ *          \n\n
+ *          for more informations about socket and sendto, see [socket](https://man7.org/linux/man-pages/man7/socket.7.html) man page and [sendto](https://man7.org/linux/man-pages/man2/sendto.2.html) man page;
+ * @param sock      socket to use for sending
+ * @param address   address to send to
+ * @param message   message to send
+ * 
+ * @return send_result or number of bytes sent if packet is incomplete (see details)
+ * 
+ * @ref send_result
+ */
+size_t  send_to(const unisock::socket_base* sock, const socket_address& address, const std::string& message)
 {
     // TODO: maybe add set/get_flag in socket to wrap fcntl ?
     ::fcntl(sock->get_socket(), F_SETFL, O_NONBLOCK);
@@ -168,7 +337,24 @@ size_t  send_to(const unisock::_lib::socket_wrap* sock, const inet_address& addr
 }
 
 
-size_t  send_to(const inet_address& address, const std::string& message)
+/**
+ * @brief sends a packet containing **message** to the specified **address**
+ * 
+ * @details this call tries to send a byte string indicated by **message** to the specified **address** using **sendto()** \n
+ *          this call intializes a non blocking raw socket of type SOCK_DGRAM for communication, to be able to **sendto()** without blocking or polling single socket before, 
+ *          if socket was not available for writing, send_to will return send_result::UNAVAILABLE.
+ *          \n\n
+ *          If the sent message was not sent entierly (**sendto()** returned a size less than message.size()), the call returns send_result::INCOMPLETE + n_bytes_sent.\n 
+ *          This way, an incomplete packet may be checked by comparing `result > send_result::INCOMPLETE` \n 
+ *          and the number of bytes sent retrieved in `result - send_result::INCOMPLETE`.
+ *          \n\n
+ *          for more informations about socket and sendto, see [socket](https://man7.org/linux/man-pages/man7/socket.7.html) man page and [sendto](https://man7.org/linux/man-pages/man2/sendto.2.html) man page;
+ * @param address   address to send to
+ * @param message   message to send
+ * 
+ * @return send_result or number of bytes sent if packet is incomplete (see details)
+ */
+size_t  send_to(const socket_address& address, const std::string& message)
 {
     auto sock = raw::socket<>(nullptr, AF_INET, SOCK_DGRAM, 0);
     // there could be an error if the newly created socket is invalid
@@ -181,8 +367,11 @@ size_t  send_to(const inet_address& address, const std::string& message)
 }
 
 
-
-UNISOCK_LIB_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace _lib 
+{
 
 /* ======================================================================== */
 /* LISTENER IMPLEMENTATION                                                  */
@@ -192,9 +381,23 @@ UNISOCK_LIB_NAMESPACE_START
 
 /* inherited socket container which regroup listener server/client tcp operations,
    defines a listener base for server/client                                        */
+
+/**
+ * @brief base implementation for the unisock::raw listener
+ * 
+ * @details this defines a base for handeling groups of sockets in a socket_container
+ *          along with an action_handler to retrieve callback events.
+ *          It defines basic ways for reading from and sending to sockets contained in this container,
+ *          And a configure_socket method to create any type of sockets. \n 
+ * 
+ *          This class can be inherited and specified to listen and manage groups of sockets to a higher protocol level
+ *          
+ * @tparam _Actions 
+ * @tparam _Data 
+ */
 template<typename ..._Actions, typename ..._Data>
 class listener_impl<std::tuple<_Actions...>, _Data...>
-                       :    public unisock::events::_lib::socket_container<
+                       :    public unisock::socket_container<
                                 _Data...,
                                 _lib::socket_data<_Data...>
                             >,
@@ -205,46 +408,160 @@ class listener_impl<std::tuple<_Actions...>, _Data...>
                                 >
                             >
 {
-    static constexpr size_t RECV_BLOCK_SIZE = 1024;
-
-    using container_type = typename unisock::events::_lib::socket_container<_Data..., _lib::socket_data<_Data...>>;
+    /**
+     * @brief Type of the socket_container parent of that class (for constructor)
+     */
+    using container_type = typename unisock::socket_container<_Data..., _lib::socket_data<_Data...>>;
 
     public:
+        /**
+         * @brief The size of the buffer that the recv recvmsg and recvfrom will use
+         */
         static constexpr size_t RECV_BUFFER_SIZE = 1024;
 
+        /**
+         * @brief the complete type of the sockets that are managed by this listener
+         *        this specializes a generic socket with the specific data of this server 
+         *        so that template arguments for data are not required with this type definition.
+         */
         using socket = socket<_Data...>;
 
+        /**
+         * @brief   enum to map which receive handler to use with this listener
+         * 
+         * @details this field can be changed to change the way of receiving on the server
+         *          this will map the correct _recv<method> to call when on_received() is called
+         *          \n
+         *          these are the values that can be used for raw::listener::recv_method: \n
+         *          - raw::method::recv         (calls action raw::actions::RECEIVED, default way of receiving, using only socket, and buffer to write to) \n
+         *          - raw::method::recvmsg      (calls action raw::actions::MESSAGE,  uses struct msghdr when receiving, msghdr::iov[0] is passed as the message in the handler callback) \n
+         *          - raw::method::recvfrom     (calls action raw::actions::PACKET,   receives packets in udp-style communications, address of the packet sender as well ass message is passed in the handler callback) \n
+         * 
+         * @ref     raw::method
+         */
         method recv_method = method::recv;
+
+         /**
+         * @brief   enum to map which send handler to use with this listener
+         * 
+         * @details this field can be changed to default the way of sending on the server
+         *          this will map the correct _recv<method> to call when on_received() is called
+         *          \n
+         *          these are the values that can be used for raw::listener::recv_method: \n
+         *          - raw::method::send         (default way of sending, using only socket, and buffer to read from)
+         *          - raw::method::sendmsg      (uses struct msghdr when sending, message argument is copied into msghdr::iov[0])
+         *          - raw::method::sendto       (send packet in udp-style communications, sends a byte string message, requires the adddress of the receiver, and a socket to define sub protocols to deal with this packet)
+         * 
+         * @note    this field is used only by the raw::listener::send methods and default the way of sending leftover packets when on_writeable() is called
+         * 
+         * @ref     raw::method
+         */
         method send_method = method::send;
 
     public:
+
+        /**
+         * @brief empty constructor, socket_container will be self-handeled
+         * 
+         * @ref   socket_container
+         */
         listener_impl()
         : container_type()
         {
         }
 
+        /**
+         * @brief empty constructor, socket_container will be handeled by an external handler
+         * 
+         * @param handler handler to use for managing event on this listener
+         * @ref   socket_container
+         */
         listener_impl(unisock::events::handler& handler)
         : container_type(handler)
         {
         }
 
+        /**
+         * @brief configure a socket 
+         * 
+         * @details use this call to add a custom socket to the listener. 
+         *          the socket will be created with the first 3 **domain**, **type** and **protocol** field,
+         *          then if a valid success is returned, the **configure** handler is called
+         *          for further configuration of the socket (socket_address, setsockopt, fcntl, ioctl, etc.)
+         *          \n\n
+         *          for more informations on **domain**, **type** and **protocol** see [socket man page](https://man7.org/linux/man-pages/man7/socket.7.html)
+         *
+         * @param domain        first argument of socket() call
+         * @param type          second argument of socket() call
+         * @param protocol      third argument of socket() call
+         * @param configure     function called just after socket creation if socket call using **domain**, **type** and **protocol** did not fail
+         * 
+         * @return true if socket() call retured a valid socket and that the configure handler passed returned true.
+         */
         virtual bool    configure_socket(int domain, int type, int protocol, const std::function<bool (socket&)>& configure);
 
+
+        /**
+         * @brief sends a message using the send method defined by raw::listener::send_method
+         * 
+         * @param socket        the socket to send to
+         * @param buffer        buffer containing the message to send
+         * @param size          length of the message in bytes
+         */
         virtual void    send(socket* socket, const void *buffer, const size_t size);
+
+        /**
+         * @brief sends a message using the a struct msghdr to store the message, use method::sendmsg
+         * 
+         * @param socket        socket to send to
+         * @param header        msghdr struct to send
+         */
         virtual void    send(socket* socket, const struct msghdr& header);
+
+        /**
+         * @brief sends a message using the send method defined by raw::listener::send_method
+         * 
+         * @param socket        socket to send to
+         * @param message_str   string containing the message to send
+         */
         virtual void    send(socket* socket, const std::string& message_str);
 
-        // should be used instead of the ones above for udp style communication
-        virtual send_result send_to(socket* sock, const inet_address& address, const std::string& message_str);
+        
+        /**
+         * @brief   sends a message using the sendto call (for udp-style communications)
+         * 
+         * @details sends a message to the specified address using the specified socket
+         * 
+         * @note    this call should be used instead of the other raw::listener::send methods for udp style communication
+         * 
+         * @param sock          socket to send to
+         * @param address       address of the receiver 
+         * @param message_str   message to send
+         * @return send_result 
+         */
+        virtual send_result send_to(socket* sock, const socket_address& address, const std::string& message_str);
 
 
     protected:
 
-        /* general definition for method */
+        /**
+         * @brief generic definition of _recv for any method
+         * 
+         * @tparam _Method  receive method (see raw::method)
+         * @param sock      socket to receive from
+         * 
+         * @return true if socket received successfully, false on error and errno indicates the error
+         */
         template<method _Method>
         bool            _recv(socket* sock) { (void)sock; }
 
-        /* definition for recv */
+        /**
+         * @brief specialization for method::recv
+         * 
+         * @param sock      socket to receive from
+         * 
+         * @return true if socket received successfully, false on error and errno indicates the error     
+         */
         template<>
         bool            _recv<method::recv>(socket* sock)
         {
@@ -264,7 +581,13 @@ class listener_impl<std::tuple<_Actions...>, _Data...>
             return (true);
         }
 
-        /* definition for recvmsg */
+        /**
+         * @brief specialization for method::recvmsg
+         * 
+         * @param sock      socket to receive from
+         * 
+         * @return true if socket received successfully, false on error and errno indicates the error     
+         */
         template<>
         bool            _recv<method::recvmsg>(socket* sock)
         {
@@ -294,6 +617,13 @@ class listener_impl<std::tuple<_Actions...>, _Data...>
             return (true);
         }
 
+        /**
+         * @brief specialization for method::recvfrom
+         * 
+         * @param sock      socket to receive from
+         * 
+         * @return true if socket received successfully, false on error and errno indicates the error     
+         */
         template<>
         bool            _recv<method::recvfrom>(socket* sock)
         {
@@ -302,7 +632,7 @@ class listener_impl<std::tuple<_Actions...>, _Data...>
 
             char        buffer[RECV_BUFFER_SIZE] { 0 };
 
-            // TODO: change this when refractoring inet_address
+            // TODO: change this when refractoring socket_address
             struct sockaddr_storage addr;
             socklen_t               addr_len = sizeof(addr);
             memset(&addr, 0, addr_len);
@@ -319,18 +649,32 @@ class listener_impl<std::tuple<_Actions...>, _Data...>
                 return (false);
             }
 
-            inet_address address { addr };
+            socket_address address { addr };
             this->template execute<actions::PACKET>(sock, address, buffer, n_bytes);
             return (true);
         }
 
 
 
-        /* general definition for method */
+        /**
+         * @brief generic definition of _send for any method
+         * 
+         * @tparam _Method  send method (see raw::method)
+         * @param sock      socket to send to (containing the data to send enqueued into its send_buffer)
+         * 
+         * @return true if socket sent successfully, false on error or unavailable for writing and errno indicates the error
+         */
         template<method _Method>
         bool            _send(socket* sock) { (void)sock; }
 
-        /* definition for send */
+
+        /**
+         * @brief specialization for method::send
+         * 
+         * @param sock      socket to send to (containing the data to send enqueued into its send_buffer)
+         * 
+         * @return true if socket sent successfully, false on error or unavailable for writing and errno indicates the error
+         */
         template<>
         bool            _send<method::send>(socket* sock)
         {
@@ -353,7 +697,13 @@ class listener_impl<std::tuple<_Actions...>, _Data...>
             return (true);
         }
 
-        /* definition for sendmsg */
+        /**
+         * @brief specialization for method::sendmsg
+         * 
+         * @param sock      socket to send to (containing the data to send enqueued into its send_buffer)
+         * 
+         * @return true if socket sent successfully, false on error or unavailable for writing and errno indicates the error
+         */
         template<>
         bool            _send<method::sendmsg>(socket* sock)
         {
@@ -377,7 +727,13 @@ class listener_impl<std::tuple<_Actions...>, _Data...>
             return (true);
         }
 
-        /* definition for sendto */
+        /**
+         * @brief specialization for method::sendto
+         * 
+         * @param sock      socket to send to (containing the data to send enqueued into its send_buffer)
+         * 
+         * @return true if socket sent successfully, false on error or unavailable for writing and errno indicates the error
+         */
         template<>
         bool            _send<method::sendto>(socket* sock)
         {
@@ -403,8 +759,27 @@ class listener_impl<std::tuple<_Actions...>, _Data...>
             return (true);
         }
 
-        virtual bool    on_receive(unisock::_lib::socket_wrap* sptr) override;
-        virtual bool    on_writeable(unisock::_lib::socket_wrap* sptr) override;
+        /**
+         * @brief   receive callback called by events handler when a socket has received some data
+         * 
+         * @details defines the way of receiving on a specific socket, 
+         *          sptr can be reinterpreted safely as raw::listener::socket to retrieve the full socket object description
+         * 
+         * @param sptr      the socket that needs to receive
+         * @return          inner socket list (socket_container::sockets) has changed iterators (i.e. most cases socket disconnected)
+         */
+        virtual bool    on_receive(unisock::socket_base* sptr) override;
+
+        /**
+         * @brief   writeable callback called by events handler when a socket that requested writing got writeable
+         * 
+         * @details defines the way of writing on a specific socket, 
+         *          sptr can be reinterpreted safely as raw::listener::socket to retrieve the full socket object description
+         * 
+         * @param sptr      the socket that needs to send
+         * @return          inner socket list (socket_container::sockets) has changed iterators (i.e. most cases socket disconnected)
+         */
+        virtual bool    on_writeable(unisock::socket_base* sptr) override;
 };
 
 
@@ -433,8 +808,6 @@ inline bool raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
 
 
 
-
-
 template<typename ..._Actions, typename ..._Data>
 inline void raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
             send(socket* sock, const std::string& message_str)
@@ -445,15 +818,7 @@ inline void raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
     // queue data to be send
     sock->data.send_buffer.push(message_str);
 
-    // // try single poll for writing on sock socket with timeout = 0
-    // bool available = events::single_poll(sock, unisock::events::_lib::WANT_WRITE, 0);
-    
-    // // if socket is not available, set write flag on socket
-    // if (!available)
-    // {
-    //     this->handler.socket_want_write(sock->get_socket(), true);
-    //     return ;
-    // }
+    // pass socket non blocking 
     int flags = ::fcntl(sock->get_socket(), F_GETFL, 0);
     ::fcntl(sock->get_socket(), F_SETFL, flags | O_NONBLOCK);
 
@@ -479,12 +844,15 @@ inline void raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
 
 
 
+
 template<typename ..._Actions, typename ..._Data>
 inline void raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
             send(socket* sock, const void *message, const size_t size)
 {
     this->send(sock, std::string(reinterpret_cast<const char*>(message), size));
 }
+
+
 
 
 template<typename ..._Actions, typename ..._Data>
@@ -496,9 +864,10 @@ inline void raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
 
 
 
+
 template<typename ..._Actions, typename ..._Data>
 inline send_result raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
-            send_to(socket* sock, const inet_address& address, const std::string& message_str)
+            send_to(socket* sock, const socket_address& address, const std::string& message_str)
 {
     int send_result = raw::send_to(sock, address, message_str);
     
@@ -527,12 +896,9 @@ inline send_result raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
 
 
 
-
-
-
 template<typename ..._Actions, typename ..._Data>
 inline bool raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
-            on_receive(unisock::_lib::socket_wrap* sptr)
+            on_receive(unisock::socket_base* sptr)
 {
     auto* sock = reinterpret_cast<socket*>(sptr);
 
@@ -552,9 +918,11 @@ inline bool raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
     }
 }
 
+
+
 template<typename ..._Actions, typename ..._Data>
 inline bool raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
-            on_writeable(unisock::_lib::socket_wrap* sptr)
+            on_writeable(unisock::socket_base* sptr)
 {
     auto* sock = reinterpret_cast<socket*>(sptr);
 
@@ -575,8 +943,10 @@ inline bool raw::_lib::listener_impl<std::tuple<_Actions...>, _Data...>::
 }
 
 
-UNISOCK_LIB_NAMESPACE_END
+} // ******** namespace _lib
 
-UNISOCK_RAW_NAMESPACE_END
 
-UNISOCK_NAMESPACE_END
+} // ******** namespace raw
+
+
+} // ******** namespace unisock

@@ -1,38 +1,38 @@
-#include "net/inet_address.hpp"
+#include "socket/socket_address.hpp"
 
 using namespace unisock;
 
 
-inet_address::inet_address()
+socket_address::socket_address()
 {
 	memset(&_address, 0, sizeof(_address));
 }
 
 
-inet_address::inet_address(const inet_address& other)
+socket_address::socket_address(const socket_address& other)
 {
 	memcpy(&_address, &other._address, sizeof(_address));
 }
 
 
-inet_address::inet_address(const sockaddr_storage& addr)
+socket_address::socket_address(const sockaddr_storage& addr)
 {
 	memcpy(&_address, &addr, sizeof(_address));
 }
 
 
 // constructor from struct sockaddr
-inet_address::inet_address(const sockaddr* addr, size_t addr_len)
-: inet_address()
+socket_address::socket_address(const sockaddr* addr, size_t addr_len)
+: socket_address()
 {
 	memcpy(&_address, addr, addr_len);
 }
 
 // constructor for IPv4 / IPv6 addresses
-inet_address::inet_address(const std::string& host, in_port_t port, bool use_IPv6)
-: inet_address()
+socket_address::socket_address(const std::string& host, in_port_t port, bool use_IPv6)
+: socket_address()
 {
-	addrinfo_result result = inet_address::addrinfo(_address, host, use_IPv6 ? AF_INET6 : AF_INET);
+	addrinfo_result result = socket_address::addrinfo(_address, host, use_IPv6 ? AF_INET6 : AF_INET);
 	if (result != addrinfo_result::SUCCESS)
 		throw std::logic_error("unable to retrieve host address");
 	this->to<sockaddr_in>()->sin_port = htons(port);
@@ -40,7 +40,7 @@ inet_address::inet_address(const std::string& host, in_port_t port, bool use_IPv
 
 
 
-inet_address&   	inet_address::operator=(const inet_address& other)
+socket_address&   	socket_address::operator=(const socket_address& other)
 {
 	memcpy(&_address, &other._address, sizeof(_address));
 	return (*this);
@@ -48,7 +48,7 @@ inet_address&   	inet_address::operator=(const inet_address& other)
 
 
 
-std::string         inet_address::get_ip(const inet_address& address)
+std::string         socket_address::get_ip(const socket_address& address)
 {
 	if (address.family() != AF_INET && address.family() != AF_INET6)
 		throw (std::logic_error(std::string("getting ip address of invalid address family: ") + std::to_string(address.family())));
@@ -63,13 +63,13 @@ std::string         inet_address::get_ip(const inet_address& address)
 
 
 
-size_t              inet_address::size() const
+size_t              socket_address::size() const
 {
 	return (to<sockaddr>()->sa_len);
 }
 
 
-sa_family_t         inet_address::family() const
+sa_family_t         socket_address::family() const
 {
 	return (to<sockaddr>()->sa_family);
 }
@@ -80,7 +80,7 @@ sa_family_t         inet_address::family() const
 // retrieves the address depending on hostname and family using getaddrinfo, 
 // and puts the result address into referenced address sockaddr_storage
 // returns: see addrinfo_result enum above
-addrinfo_result  inet_address::addrinfo(struct sockaddr_storage& address, const std::string& hostname, const sa_family_t family)
+addrinfo_result  socket_address::addrinfo(struct sockaddr_storage& address, const std::string& hostname, const sa_family_t family)
 {
 	// try to get addr from hostname
 	int         err = 0;
@@ -109,10 +109,10 @@ addrinfo_result  inet_address::addrinfo(struct sockaddr_storage& address, const 
 	return (addrinfo_result::SUCCESS);
 }
 
-// overload addrinfo for inet_address
-addrinfo_result  inet_address::addrinfo(inet_address& address, const std::string& hostname, const sa_family_t family)
+// overload addrinfo for socket_address
+addrinfo_result  socket_address::addrinfo(socket_address& address, const std::string& hostname, const sa_family_t family)
 {
-	return (inet_address::addrinfo(address._address, hostname, family));
+	return (socket_address::addrinfo(address._address, hostname, family));
 }
 
 
@@ -120,7 +120,7 @@ addrinfo_result  inet_address::addrinfo(inet_address& address, const std::string
 // retrieves the hostname of addr using getnameinfo, 
 // and puts the result hostname into referenced hostname string
 // returns: see nameinfo_result enum above
-nameinfo_result  inet_address::nameinfo(std::string& hostname, const sockaddr* addr, socklen_t addr_len)
+nameinfo_result  socket_address::nameinfo(std::string& hostname, const sockaddr* addr, socklen_t addr_len)
 {
 	// try to find a hostname corresponding with addr struct
 	char hostname_buffer[NI_MAXHOST + 1] = {0};
@@ -145,10 +145,10 @@ nameinfo_result  inet_address::nameinfo(std::string& hostname, const sockaddr* a
 	return (nameinfo_result::SUCCESS);
 }
 
-// overload nameinfo for inet_address
-nameinfo_result  inet_address::nameinfo(std::string& hostname, const inet_address& address)
+// overload nameinfo for socket_address
+nameinfo_result  socket_address::nameinfo(std::string& hostname, const socket_address& address)
 {
-	return (inet_address::nameinfo(hostname, address.to<sockaddr>(), address.size()));
+	return (socket_address::nameinfo(hostname, address.to<sockaddr>(), address.size()));
 }
 
 
@@ -159,10 +159,10 @@ nameinfo_result  inet_address::nameinfo(std::string& hostname, const inet_addres
 /* creates an inet address from a hostname and family              */
 /* may throw if getaddrinfo fails to retrieve the hostname, if     */
 /* hostname is numeric ip this should not happen                   */
-inet_address inet_address::from(const std::string& hostname, const sa_family_t family)
+socket_address socket_address::from(const std::string& hostname, const sa_family_t family)
 {
-	inet_address address {};
-	addrinfo_result result = inet_address::addrinfo(address, hostname, family);
+	socket_address address {};
+	addrinfo_result result = socket_address::addrinfo(address, hostname, family);
 	if (result != addrinfo_result::SUCCESS)
 		throw std::logic_error(std::string("error when trying to get address info: ") + strerror(errno));
 	return (address);
@@ -173,10 +173,10 @@ inet_address inet_address::from(const std::string& hostname, const sa_family_t f
 /* may throw if getaddrinfo fails to retrieve the hostname,        */
 /* or if retrieved address is not of IPv4/IPv6 address family,     */
 /* if hostname is numeric ip this should not happen                */
-inet_address inet_address::from(const std::string& hostname, const in_port_t port, const sa_family_t family)
+socket_address socket_address::from(const std::string& hostname, const in_port_t port, const sa_family_t family)
 {
-	inet_address address {};
-	addrinfo_result result = inet_address::addrinfo(address, hostname, family);
+	socket_address address {};
+	addrinfo_result result = socket_address::addrinfo(address, hostname, family);
 	if (result != addrinfo_result::SUCCESS)
 		throw std::logic_error(std::string("error when trying to get address info: ") + strerror(errno));
 	
@@ -191,7 +191,7 @@ inet_address inet_address::from(const std::string& hostname, const in_port_t por
 
 
 /* returns a string describing the address structure */
-std::string         inet_address::to_string() const
+std::string         socket_address::to_string() const
 {
 	std::string info;
 
@@ -216,16 +216,16 @@ std::string         inet_address::to_string() const
 
 
 template<sa_family_t _AddressFamily>
-std::string     inet_address::_to_string() const
+std::string     socket_address::_to_string() const
 {
 	return ("unkown address family: " + std::to_string(family()));
 }
 
 template<>
-std::string     inet_address::_to_string<AF_INET>() const
+std::string     socket_address::_to_string<AF_INET>() const
 {
 	std::string host;
-	nameinfo_result result = inet_address::nameinfo(host, *this);
+	nameinfo_result result = socket_address::nameinfo(host, *this);
 	if (result != nameinfo_result::SUCCESS)
 	{
 		host = "could not retrieve host: ";
@@ -235,7 +235,7 @@ std::string     inet_address::_to_string<AF_INET>() const
 	std::string info = 
 		"sin_len:     " + std::to_string(size()) + "\n"
 	+   "sin_family:  " + std::string("AF_INET\n")
-	+   "sin_addr:    " + inet_address::get_ip(*this) + " (" + host + ")\n"
+	+   "sin_addr:    " + socket_address::get_ip(*this) + " (" + host + ")\n"
 	+   "sin_port:    " + std::to_string(to<sockaddr_in>()->sin_port) + "\n"
 	+   "sin_zero:    ";
 	
@@ -248,10 +248,10 @@ std::string     inet_address::_to_string<AF_INET>() const
 }
 
 template<>
-std::string     inet_address::_to_string<AF_INET6>() const
+std::string     socket_address::_to_string<AF_INET6>() const
 {
 	std::string host;
-	nameinfo_result result = inet_address::nameinfo(host, *this);
+	nameinfo_result result = socket_address::nameinfo(host, *this);
 	if (result != nameinfo_result::SUCCESS)
 	{
 		host = "could not retrieve host: ";
@@ -261,7 +261,7 @@ std::string     inet_address::_to_string<AF_INET6>() const
 	return (
 		"sin6_len:    " + std::to_string(size()) + "\n"
 	+   "sin6_family: " + std::string("AF_INET6") + "\n"
-	+   "sin6_addr:   " + inet_address::get_ip(*this) + " (" + host + ")\n"
+	+   "sin6_addr:   " + socket_address::get_ip(*this) + " (" + host + ")\n"
 	+   "sin6_port:   " + std::to_string(to<sockaddr_in>()->sin_port) + "\n"
 	+   "sin6_flowinfo: " + std::to_string(static_cast<int>(to<sockaddr_in6>()->sin6_flowinfo)) + "\n"
 	+   "sin6_scope_id: " + std::to_string(static_cast<int>(to<sockaddr_in6>()->sin6_scope_id)) + "\n"

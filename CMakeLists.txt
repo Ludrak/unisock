@@ -52,8 +52,8 @@ include_directories(./includes)
 
 add_library(cppsockets STATIC
 	# library source here
-	src/net/inet_address.cpp
-	src/net/socket.cpp
+	src/socket/socket_address.cpp
+	src/socket/socket.cpp
 
 	# socket handlers
 	src/events/handlers/poll.cpp
@@ -69,30 +69,32 @@ if (build-examples)
 
 	include_directories(./examples/includes)
 
-	# Basic tcp client 
-	add_executable(tcp-server
-		examples/tcp-server/main.cpp
-	)
-	target_link_libraries(tcp-server cppsockets)
+	# Will be re-added back soon
 
-	# Basic tcp client
-	add_executable(tcp-client
-		examples/tcp-client/main.cpp
-	)
-	target_link_libraries(tcp-client cppsockets)
+	# # Basic tcp client 
+	# add_executable(tcp-server
+	# 	examples/tcp-server/main.cpp
+	# )
+	# target_link_libraries(tcp-server cppsockets)
+
+	# # Basic tcp client
+	# add_executable(tcp-client
+	# 	examples/tcp-client/main.cpp
+	# )
+	# target_link_libraries(tcp-client cppsockets)
 
 
-	# Basic udp server
-	add_executable(udp-server
-		examples/udp-server/main.cpp
-	)
-	target_link_libraries(udp-server cppsockets)
+	# # Basic udp server
+	# add_executable(udp-server
+	# 	examples/udp-server/main.cpp
+	# )
+	# target_link_libraries(udp-server cppsockets)
 
-	# Basic udp client
-	add_executable(udp-client
-		examples/udp-client/main.cpp
-	)
-	target_link_libraries(udp-client cppsockets)
+	# # Basic udp client
+	# add_executable(udp-client
+	# 	examples/udp-client/main.cpp
+	# )
+	# target_link_libraries(udp-client cppsockets)
 
 
 	# Basic raw listener

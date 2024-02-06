@@ -13,7 +13,7 @@ int main()
     listener.send_method = raw::method::sendto;
 
     listener.on<PACKET>(
-        [&listener](raw::listener::socket* socket, const inet_address& address, const char* message, size_t size) {
+        [&listener](raw::listener::socket* socket, const socket_address& address, const char* message, size_t size) {
             (void)socket;
             std::cout << "received: '" << std::string(message, size) << std::endl << "'" << std::endl;
             std::cout << "from address:" << std::endl << address.to_string();
@@ -32,7 +32,7 @@ int main()
         {
             try {
                 std::cout << "before addr" << std::endl;
-                socket.data.address = inet_address::from("127.0.0.1", 8000, AF_INET);
+                socket.data.address = socket_address::from("127.0.0.1", 8000, AF_INET);
                 std::cout << "after addr" << std::endl;
             } catch (std::logic_error& err)
             {

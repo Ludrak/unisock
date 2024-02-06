@@ -1,22 +1,44 @@
+/**
+ * @file poll.cpp
+ * @author ROBINO Luca
+ * @brief events handler implementation for poll
+ * @version 1.0
+ * @date 2024-02-04
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #include "events/events_types.hpp"
 #include "events/handlers/poll/handler_impl.hpp"
 
-UNISOCK_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace unisock {
 
-UNISOCK_EVENTS_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace events {
 
-UNISOCK_LIB_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace _lib {
 
 
-void handler_impl<handler_types::POLL>::add_socket(int socket, unisock::_lib::socket_wrap* ref)
+
+void handler_impl<handler_types::POLL>::add_socket(int socket, unisock::socket_base* ref)
 {
     struct pollfd data;
     data.events = POLLIN;
     data.revents = 0;
     data.fd = socket;
     this->sockets.push_back(data);
-    this->socket_ptrs.push_back(reinterpret_cast<unisock::_lib::socket_wrap*>(ref));
+    this->socket_ptrs.push_back(reinterpret_cast<unisock::socket_base*>(ref));
 }
+
 
 
 void handler_impl<handler_types::POLL>::del_socket(int socket)
@@ -31,6 +53,8 @@ void handler_impl<handler_types::POLL>::del_socket(int socket)
 }
 
 
+
+
 void handler_impl<handler_types::POLL>::socket_want_read(int socket, bool active)
 {
     auto it = std::find(this->sockets.begin(), this->sockets.end(), socket);
@@ -41,6 +65,7 @@ void handler_impl<handler_types::POLL>::socket_want_read(int socket, bool active
     else
         it->events &= ~POLLIN;
 }
+
 
 
 void handler_impl<handler_types::POLL>::socket_want_write(int socket, bool active)
@@ -55,8 +80,8 @@ void handler_impl<handler_types::POLL>::socket_want_write(int socket, bool activ
 }
 
 
-UNISOCK_LIB_NAMESPACE_END
+} // ******** namespace _lib
 
-UNISOCK_EVENTS_NAMESPACE_END
+} // ******** namespace events
 
-UNISOCK_NAMESPACE_END
+} // ******** namespace unisock

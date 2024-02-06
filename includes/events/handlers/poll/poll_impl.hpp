@@ -1,4 +1,14 @@
-// #include "events/handler.hpp"
+/**
+ * @file poll_impl.hpp
+ * @author ROBINO Luca
+ * @brief  events polling implementation for poll
+ * @version 0.1
+ * @date 2024-02-04
+ * 
+ * @copyright Copyright (c) 2024
+ * 
+ */
+
 #pragma once
 
 #ifndef _EVENTS_DEF
@@ -7,14 +17,30 @@
 
 #include <poll.h>
 
-UNISOCK_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace unisock {
 
-UNISOCK_EVENTS_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace events {
 
-UNISOCK_LIB_NAMESPACE_START
+/**
+ * @addindex
+ */
+namespace _lib {
 
 
-/* poll implementation for poll.h */
+/**
+ * @brief   events::poll implementation for poll.h, polls on all sockets stored in handler
+ * @details this call will for every socket readable or writeable, respectively call the on_readable, and on_writeable members of their container, which indicates to the container to handle the appropriate event.
+ * 
+ * @tparam  
+ * @param handler the handler to poll on
+ * @param timeout timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
+ */
 template<>
 void    poll_impl<handler_types::POLL>(handler& handler, int timeout)
 {
@@ -45,12 +71,27 @@ void    poll_impl<handler_types::POLL>(handler& handler, int timeout)
     }
 }
 
+/**
+ * @brief bitwise field for events::single_poll to select read events to poll on
+ */
 static constexpr int    WANT_READ = POLLIN;
+/**
+ * @brief bitwise field for events::single_poll to select write events to poll on
+ */
 static constexpr int    WANT_WRITE = POLLOUT;
 
-/* single poll, poll on a single socket, return true if poll set all events set in events bitwise selector */
+/**
+ * @brief  events::poll implementation for poll, polls on a single socket once, returns true if poll set all events set in events bitwise selector
+ * 
+ * @param socket    the socket to be polled
+ * @param events    events required when polling (see WANT_READ, WANT_WRITE)
+ * @param timeout   timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
+ * 
+ * 
+ * @return true if events specified in events are available, otherwise or on poll error, returns false
+ */
 template<>
-bool    single_poll_impl<handler_types::POLL>(const unisock::_lib::socket_wrap& socket, int events, int timeout)
+bool    single_poll_impl<handler_types::POLL>(const unisock::socket_base& socket, int events, int timeout)
 {
     struct pollfd poll_data;
     poll_data.events = events;
@@ -68,8 +109,8 @@ bool    single_poll_impl<handler_types::POLL>(const unisock::_lib::socket_wrap& 
     return (false);
 }
 
-UNISOCK_LIB_NAMESPACE_END
+} // ******** namespace _lib
 
-UNISOCK_EVENTS_NAMESPACE_END
+} // ******** namespace events
 
-UNISOCK_NAMESPACE_END
+} // ******** namespace unisock
