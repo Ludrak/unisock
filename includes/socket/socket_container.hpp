@@ -71,6 +71,7 @@ class   socket_container : public virtual events::pollable_entity
             auto insert = this->sockets.insert(std::make_pair(sockobj.get_socket(), sockobj));
             if (!insert.second)
                 return nullptr; // insert error, should not happen unless socket was not previously deleted
+
             this->handler.add_socket(sockobj.get_socket(), &insert.first->second);
             return (&insert.first->second);
         }
@@ -88,15 +89,28 @@ class   socket_container : public virtual events::pollable_entity
          */
         _SocketType*    make_socket(int domain, int type, int protocol)
         {
+            // _SocketType sockobj { this->handler };
+
+            // if (!sockobj.open(domain, type, protocol))
+            //     return nullptr; // socket() failed
+
+            // auto insert = this->sockets.insert(std::make_pair(sockobj.get_socket(), sockobj));
+            // if (!insert.second)
+            //     return nullptr; // insert error, should not happen unless socket was not previously deleted
+            
+            // return (&insert.first->second);
+
             _SocketType sockobj { this->handler };
 
-            if (!sockobj.open(domain, type, protocol))
+            // calls socket_base::open to avoid adding sockobj pointer to the handler, socket is added to the handler below
+            if (!sockobj.socket_base::open(domain, type, protocol))
                 return nullptr; // socket() failed
 
             auto insert = this->sockets.insert(std::make_pair(sockobj.get_socket(), sockobj));
             if (!insert.second)
                 return nullptr; // insert error, should not happen unless socket was not previously deleted
-            
+
+            this->handler.add_socket(sockobj.get_socket(), &insert.first->second);
             return (&insert.first->second);
         }
 

@@ -116,7 +116,7 @@ class socket<
             unisock::events::actions_list   <_Actions...>,
             unisock::entity_model           <_Data...>
             >
-    :   public socket_base,
+    :   public unisock::socket_base,
         public events::action_handler<basic_actions_list<_Actions...>>,
         public events::pollable_entity
 {
@@ -155,9 +155,7 @@ class socket<
          */
         socket(events::handler& handler, int socket)
         : socket_base(socket), events::pollable_entity(handler)
-        {
-            this->handler.add_socket(get_socket(), this);
-        }
+        {}
 
 
     public:
@@ -183,6 +181,7 @@ class socket<
             this->handler.add_socket(get_socket(), this);
             return (true);
         }
+
 
         /**
          * @brief closes the socket file descriptor
@@ -227,26 +226,18 @@ class socket<
 
         /**
          * @brief   called by events::poll when socket is readable
-         * 
-         * @return true if iterators of handlers might have been invalidated
          */
-        bool    on_readable() override
+        void    on_readable() override
         {
             this->template execute <basic_actions::READABLE>();
-            // TODO: find if iterator of handler is invalidated
-            return (false);
         }
 
         /**
          * @brief   called by events::poll when socket is writeable
-         * 
-         * @return true if iterators of handlers might have been invalidated
          */
-        bool    on_writeable() override
+        void    on_writeable() override
         {
             this->template execute <basic_actions::WRITEABLE>();
-            // TODO: find if iterator of handler is invalidated
-            return (false);
         }
 
         /**

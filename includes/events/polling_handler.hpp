@@ -67,6 +67,7 @@ class handler : public _lib::handler_impl<handler_type>
         void    add_socket(int socket, unisock::socket_base* sptr)
         {
             this->handler_impl::add_socket(socket, sptr);
+            ++invalid; // changes 
         }
 
         /**
@@ -77,9 +78,45 @@ class handler : public _lib::handler_impl<handler_type>
         void    delete_socket(int socket)
         {
             this->handler_impl::del_socket(socket);
+            ++invalid; // changes 
+        }
+
+
+        /**
+         * @brief Gets a reference to the invalid field
+         * 
+         * @details the invalid field is changed every time a socket is added or deleted from the container, 
+         *          this way by comparing the returned value later with ref_has_changed we can know if iterators
+         *          on this handler were invalidated.
+         * 
+         * 
+         * @return ushort 
+         */
+        ushort  get_ref()
+        {
+            // returns the address of data, if vector changes, so as the data() address
+            return (this->invalid);
+        }
+
+        /**
+         * @brief compares reference passed in arguments with the actual reference value
+         * 
+         * @param old_ref   the old reference returned by get_ref()
+         * @return true if references are same
+         */
+        bool    ref_has_changed(ushort old_ref)
+        {
+            return (old_ref != get_ref());
         }
     
     private:
+        /**
+         * @brief short to keep track of inner containers iterators validity,
+         * @details each time add_socket or delete_socket is called. 
+         *          the value can overflow as long as the overflowed value is not same as the old value
+         * 
+         */
+        ushort  invalid;
 
         /**
          * @brief friend with the correct events::poll implementation

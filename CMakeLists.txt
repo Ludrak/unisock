@@ -16,11 +16,13 @@ option(debug			"build the library in debug mode" OFF)
 option(build-examples	"Builds the list of examples in ./examples" OFF)
 option(use-ssl			"Enables tls features, requires OpenSSL library, paths to it must be defined below in the SSL section" OFF)
 
+add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 
 if (debug)
-	add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+	add_compile_options(-g3 -fsanitize=address)
+	add_link_options(-fsanitize=address)
 else()
-	add_compile_options(-Wall -Wextra -Wpedantic -Werror -O3)
+	add_compile_options(-O3)
 endif(debug)
 
 #

@@ -321,7 +321,8 @@ class socket_address
          * @tparam _AddressType type of address struct to reinterpret to
          * 
          * @return a reinterpreted pointer of type _AddressType or nullptr if address struct family dont match _AddressType
-         */        template<typename _AddressType>
+         */        
+        template<typename _AddressType>
         const _AddressType* to() const
         {
             if (address_family_of<_AddressType>::value != family())
@@ -385,7 +386,7 @@ class socket_address
          * 
          * @throws std::logic_error if address is not of inet protocol
          */
-        static std::string      get_ip(const socket_address& address);
+        static std::string         get_ip(const socket_address& address);
 
 
      

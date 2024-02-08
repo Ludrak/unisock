@@ -48,18 +48,25 @@ socket_address&   	socket_address::operator=(const socket_address& other)
 
 
 
-std::string         socket_address::get_ip(const socket_address& address)
+std::string 		socket_address::get_ip(const socket_address& address)
 {
-	if (address.family() != AF_INET && address.family() != AF_INET6)
-		throw (std::logic_error(std::string("getting ip address of invalid address family: ") + std::to_string(address.family())));
-
 	char ip[IP_ADDRESS_BUFFER_SIZE] { 0 };
-
-	if (nullptr == inet_ntop(address.family(), &address.to<sockaddr_in>()->sin_addr, ip, address.size()))
-		return "";
-	return std::string(ip);
+	// if (address.family() != AF_INET && address.family() != AF_INET6)
+	//     throw (std::logic_error(std::string("getting ip address of invalid address family: ") + std::to_string(address.family())));
+	switch (address.family())
+	{
+	case AF_INET:
+		if (nullptr == inet_ntop(AF_INET, &address.to<sockaddr_in>()->sin_addr, ip, address.size()))
+			return "[inet_ntop error: " + std::string(strerror(errno)) + "]";
+		return std::string(ip);
+	
+	case AF_INET6:
+		if (nullptr == inet_ntop(AF_INET6, &address.to<sockaddr_in6>()->sin6_addr, ip, address.size()))
+			return "[inet_ntop error: " + std::string(strerror(errno)) + "]";
+		return std::string(ip);
+	}
+	return ("[invalid address family]");            
 }
-
 
 
 

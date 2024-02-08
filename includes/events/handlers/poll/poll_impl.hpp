@@ -47,26 +47,30 @@ void    poll_impl<handler_types::POLL>(handler& handler, int timeout)
     int n_changes = poll(reinterpret_cast<pollfd*>(handler.sockets.data()), handler.sockets.size(), timeout);
     for (auto it = handler.sockets.begin(); it != handler.sockets.end(); ++it)
     {
-        auto& socket = *it;
+        auto&   socket = *it;
+        ushort  handler_ref = handler.get_ref();
+
         if (socket.revents == 0)
             continue ;
         // socket is available for reading
         if (socket.revents & POLLIN)
         {
             // client pointer will be at the same place in the socket_ptrs vector
-            auto& client = handler.socket_ptrs[it - handler.sockets.begin()];
-            client->on_readable();//get_container()->on_receive(client);
+            unisock::socket_base* sockobj = handler.socket_ptrs[it - handler.sockets.begin()];
+            sockobj->on_readable();
         }
+        if (handler.ref_has_changed(handler_ref))
+            break;
         // socket is available for writing
         if (socket.revents & POLLOUT)
         {
             // client pointer will be at the same place in the socket_ptrs vector
-            auto& client = handler.socket_ptrs[it - handler.sockets.begin()];
-            client->on_writeable();////get_container()->on_writeable(client);
+            auto* sockobj = handler.socket_ptrs[it - handler.sockets.begin()];
+            sockobj->on_writeable();
         }
 
         n_changes--;
-        if (n_changes == 0)
+        if (n_changes == 0 || handler.ref_has_changed(handler_ref))
             break;
     }
 }

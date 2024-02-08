@@ -111,12 +111,12 @@ class socket_base
         /**
          * @brief   virtual definition for events::poll to call
          */
-        virtual bool    on_readable() = 0;
+        virtual void    on_readable() = 0;
 
         /**
          * @brief   virtual definition for events::poll to call
          */
-        virtual bool    on_writeable() = 0;
+        virtual void    on_writeable() = 0;
 
 
     private:

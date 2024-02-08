@@ -264,7 +264,6 @@ class server_impl   <
         {
             client_container_type::close();
             server_container_type::close();
-            std::cout << "handler empty " << this->get_handler().empty() << std::endl;
         }
 
 

@@ -36,7 +36,7 @@ void handler_impl<handler_types::POLL>::add_socket(int socket, unisock::socket_b
     data.revents = 0;
     data.fd = socket;
     this->sockets.push_back(data);
-    this->socket_ptrs.push_back(reinterpret_cast<unisock::socket_base*>(ref));
+    this->socket_ptrs.push_back(ref);
 }
 
 
