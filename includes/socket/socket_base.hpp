@@ -12,7 +12,7 @@
 #pragma once
 
 
-#include "socket/isocket_container_base.hpp"
+#include "socket/socket_address.hpp"
 
 #include <unistd.h>
 #include <sys/socket.h>
@@ -35,62 +35,49 @@ class socket_base
 {
     public:
         /**
-         * @brief default constructor deleted
+         * @brief default constructor default
          */
-        socket_base() = delete;
-
-        /**
-         * @brief construct a socket contained in a socket_container
-         * 
-         * @param container container that will handle the socket events
-         * 
-         * @ref isocket_container_base
-         * @ref socket_container
-         */
-        socket_base(isocket_container_base* container);
+        socket_base();
 
 
         /**
-         * @brief construct a socket contained in a socket_container, with a socket descriptor
+         * @brief construct a socket with a socket file descriptor
          * 
          * @note  this constructor is usually called on accept where socket creation is not handeled by socket() call
          * 
-         * @param container container that will handle the socket events
-         * @param socket    socket file descriptor
-         * 
-         * @ref isocket_container_base
-         * @ref socket_container
          */
-        socket_base(isocket_container_base* container, int socket);
+        socket_base(int socket);
 
         /**
-         * @brief   construct a socket contained in a socket_container, with args for `socket()` syscall
+         * @brief opens a new socket file descriptor with args for **socket()** syscall
          * 
-         * @note    may return an invalid socket with a value of -1 if **socket()** call fails, error can be retrieved if socket::get_socket() is -1 in **errno**
+         * @note    this call is inherited in unisock::socket<_Data> where socket is added to handler for poll events
          * 
          * @details creates the socket file descriptor with **socket()** with provided **domain**, **type**, and **protocol**.
          *          if **socket()** call fails, the socket will be set to -1, this is why this constructors needs to be checked 
          *          when used, upon error, the specific error code can be retrieved in **errno**
          *          for more informations about **domain**, **type**, and **protocol** see [socket man page](https://man7.org/linux/man-pages/man7/socket.7.html)
          * 
-         * @param container container that will handle the socket events
          * @param domain    protocol family
          * @param type      type of connection
          * @param protocol  hint protocol to use for connection (usually 0 if protocol can be deduced with type and family)
+         * 
+         * @return false if **socket()** call fails, error can be retrieved in **errno**
          */
-        socket_base(isocket_container_base* container, const int domain, const int type, const int protocol);
+        virtual bool    open(int domain, int type, int protocol);
 
+        /**
+         * @brief closes the socket file descriptor
+         * @note    this call is inherited in unisock::socket<_Data> where socket is added to handler for poll events
+         */
+        virtual void    close();
+        
         /**
          * @brief returns the socket file descriptor
          * 
          * @return socket file descriptor
          */
         int     get_socket() const;
-
-        /**
-         * @brief closes the socket file descriptor
-         */
-        void    close();
 
         /**
          * @brief set option on socket, wraps `::setsockopt` see [socket](https://man7.org/linux/man-pages/man7/socket.7.html) manpage and [setsockopt](https://man7.org/linux/man-pages/man2/setsockopt.2.html) manpage
@@ -120,25 +107,30 @@ class socket_base
          */
         bool    getsockopt(int level, int option_name, void* option_value, socklen_t* option_len) const;
 
+
         /**
-         * @brief returns the pointer to the container that handles this socket
-         * 
-         * @note this may be null if socket was created with a nullptr handler
-         * 
-         * @return a pointer to the container that handles this socket
+         * @brief   virtual definition for events::poll to call
          */
-        isocket_container_base*  get_container() const;
+        virtual bool    on_readable() = 0;
+
+        /**
+         * @brief   virtual definition for events::poll to call
+         */
+        virtual bool    on_writeable() = 0;
+
 
     private:
         /**
          * @brief socket file descriptor
          */
-        int                               _sock;
+        int             _sock;
 
+    public:
         /**
-         * @brief pointer to container handeling events for this socket
+         * @brief address of this socket
+         * 
          */
-        isocket_container_base*      container;
+        socket_address  address;
 };
 
 } // ******** namespace unisock

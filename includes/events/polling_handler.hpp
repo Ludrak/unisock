@@ -43,8 +43,7 @@ namespace events {
  * 
  * @details this non generic class specifies an handler implementation depending on unisock::events::handler_type (defined in events_types.hpp) \n 
  * 
- * @ref     unisock::socket_container
- */
+x */
 class handler : public _lib::handler_impl<handler_type>
 {
     public:
@@ -65,10 +64,19 @@ class handler : public _lib::handler_impl<handler_type>
          * @param socket socket file descriptor
          * @param sptr   socket object to be attached to descriptor
          */
-        template<typename ..._Data>
-        void    add_socket(int socket, ::unisock::socket<_Data...>* sptr)
+        void    add_socket(int socket, unisock::socket_base* sptr)
         {
-            this->handler_impl::add_socket(socket, reinterpret_cast<::unisock::socket_base*>(sptr));
+            this->handler_impl::add_socket(socket, sptr);
+        }
+
+        /**
+         * @brief deletes a socket from the handler
+         * 
+         * @param socket socket file descriptor
+         */
+        void    delete_socket(int socket)
+        {
+            this->handler_impl::del_socket(socket);
         }
     
     private:
@@ -79,6 +87,7 @@ class handler : public _lib::handler_impl<handler_type>
          */
         friend void _lib::poll_impl<handler_type>(handler&, int);
 };
+
 
 } // ******** namespace events
 

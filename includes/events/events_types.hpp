@@ -127,6 +127,11 @@ class handler_impl_base
         virtual void    del_socket(int socket) = 0;
 
         /**
+         * @brief returns true if handler handles no socket
+         */
+        virtual bool    empty() = 0;
+
+        /**
          * @brief set/unset read flag on socket for next poll on handler
          * 
          * @param socket        socket descriptor in handler
@@ -166,16 +171,16 @@ class handler_impl : public handler_impl_base {};
 template<handler_types _Handler>
 void                    poll_impl(handler& handler, int timeout);
 
-/**
- * @brief poll on single sockets without handeling callback events
- * 
- * @param socket    the socket to be polled
- * @param events    events required when polling (see WANT_READ, WANT_WRITE)
- * @param timeout   timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
- * @return true if all events specified where polled, otherwise or on poll error, returns false
- */
-template<handler_types _Handler>
-bool                    single_poll_impl(const unisock::socket_base& socket, int events, int timeout);
+// /**
+//  * @brief poll on single sockets without handeling callback events
+//  * 
+//  * @param socket    the socket to be polled
+//  * @param events    events required when polling (see WANT_READ, WANT_WRITE)
+//  * @param timeout   timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
+//  * @return true if all events specified where polled, otherwise or on poll error, returns false
+//  */
+// template<handler_types _Handler>
+// bool                    single_poll_impl(const unisock::socket_base& socket, int events, int timeout);
 
 
 } // ******** namespace _lib

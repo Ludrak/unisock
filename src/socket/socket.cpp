@@ -6,20 +6,23 @@
 namespace unisock {
 
 
-socket_base::socket_base(isocket_container_base* container)
-: _sock(-1), container(container)
+socket_base::socket_base()
+: _sock(-1)
 {}
 
-socket_base::socket_base(isocket_container_base* container, int socket)
-: _sock(socket), container(container)
+socket_base::socket_base(int socket)
+: _sock(socket)
 {}
 
-socket_base::socket_base(isocket_container_base* container, const int domain, const int type, const int protocol)
-: container(container)
+bool    socket_base::open(int domain, int type, int protocol)
 {
     _sock = ::socket(domain, type, protocol);
     if (_sock < 0)
+    {
         _sock = -1;
+        return (false);
+    }
+    return (true);
 }
 
 void    socket_base::close()
@@ -45,13 +48,6 @@ bool    socket_base::setsockopt(int level, int option_name, const void* option_v
 bool    socket_base::getsockopt(int level, int option_name, void* option_value, socklen_t* option_len) const
 {
     return (0 == ::getsockopt(this->_sock, level, option_name, option_value, option_len));
-}
-
-
-
-isocket_container_base*  socket_base::get_container() const
-{
-    return (this->container);
 }
 
 

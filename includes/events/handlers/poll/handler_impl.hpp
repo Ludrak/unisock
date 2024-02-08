@@ -55,7 +55,7 @@ class handler_impl<handler_types::POLL> : public handler_impl_base
          * @brief vector of pointer to sockets in socket container 
          * @note  the socket and socket_ptrs vectors are always the same size, this way pointers to socket objects are retrieved directly by index
          */
-        std::vector<unisock::socket_base*>    socket_ptrs;
+        std::vector<unisock::socket_base*>          socket_ptrs;
 
         /**
          * @brief adds a socket to the handler
@@ -71,6 +71,11 @@ class handler_impl<handler_types::POLL> : public handler_impl_base
          * @param socket        socket file descriptor to be deleted
          */
         void    del_socket(int socket) override;
+
+        /**
+         * @brief returns true if handler handles no socket
+         */
+        bool    empty() override;
 
         /**
          * @brief set/unset read flag on socket for next poll on handler

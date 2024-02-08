@@ -54,6 +54,12 @@ void handler_impl<handler_types::POLL>::del_socket(int socket)
 
 
 
+bool handler_impl<handler_types::POLL>::empty()
+{
+    return (this->sockets.empty());
+}
+
+
 
 void handler_impl<handler_types::POLL>::socket_want_read(int socket, bool active)
 {

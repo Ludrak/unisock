@@ -126,6 +126,13 @@ class socket_address
          */
         static constexpr size_t MAX_HOST_RESOLVE_RETRIES = 3;
 
+
+        /**
+         * @brief size of the address storage (sizeof(sockaddr_storage))
+         * 
+         */
+        static constexpr size_t ADDRESS_STORAGE_SIZE = sizeof(sockaddr_storage);
+
         /**
          * @brief default constructor of an empty address
          * 
@@ -464,7 +471,7 @@ class socket_address
          * 
          * @ref addrinfo_result
          */
-        static socket_address from(const std::string& hostname, const sa_family_t family = AF_INET);
+        static socket_address from(const std::string& hostname, const sa_family_t family);
 
 
         /**

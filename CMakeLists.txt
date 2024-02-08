@@ -71,17 +71,17 @@ if (build-examples)
 
 	# Will be re-added back soon
 
-	# # Basic tcp client 
-	# add_executable(tcp-server
-	# 	examples/tcp-server/main.cpp
-	# )
-	# target_link_libraries(tcp-server cppsockets)
+	# Basic tcp server 
+	add_executable(tcp-server
+		examples/tcp-server/main.cpp
+	)
+	target_link_libraries(tcp-server cppsockets)
 
-	# # Basic tcp client
-	# add_executable(tcp-client
-	# 	examples/tcp-client/main.cpp
-	# )
-	# target_link_libraries(tcp-client cppsockets)
+	# Basic tcp client
+	add_executable(tcp-client
+		examples/tcp-client/main.cpp
+	)
+	target_link_libraries(tcp-client cppsockets)
 
 
 	# # Basic udp server

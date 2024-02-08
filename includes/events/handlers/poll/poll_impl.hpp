@@ -55,14 +55,14 @@ void    poll_impl<handler_types::POLL>(handler& handler, int timeout)
         {
             // client pointer will be at the same place in the socket_ptrs vector
             auto& client = handler.socket_ptrs[it - handler.sockets.begin()];
-            client->get_container()->on_receive(client);
+            client->on_readable();//get_container()->on_receive(client);
         }
         // socket is available for writing
         if (socket.revents & POLLOUT)
         {
             // client pointer will be at the same place in the socket_ptrs vector
             auto& client = handler.socket_ptrs[it - handler.sockets.begin()];
-            client->get_container()->on_writeable(client);
+            client->on_writeable();////get_container()->on_writeable(client);
         }
 
         n_changes--;
@@ -80,34 +80,34 @@ static constexpr int    WANT_READ = POLLIN;
  */
 static constexpr int    WANT_WRITE = POLLOUT;
 
-/**
- * @brief  events::poll implementation for poll, polls on a single socket once, returns true if poll set all events set in events bitwise selector
- * 
- * @param socket    the socket to be polled
- * @param events    events required when polling (see WANT_READ, WANT_WRITE)
- * @param timeout   timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
- * 
- * 
- * @return true if events specified in events are available, otherwise or on poll error, returns false
- */
-template<>
-bool    single_poll_impl<handler_types::POLL>(const unisock::socket_base& socket, int events, int timeout)
-{
-    struct pollfd poll_data;
-    poll_data.events = events;
-    poll_data.revents = 0;
-    poll_data.fd = socket.get_socket();
+// /**
+//  * @brief  events::poll implementation for poll, polls on a single socket once, returns true if poll set all events set in events bitwise selector
+//  * 
+//  * @param socket    the socket to be polled
+//  * @param events    events required when polling (see WANT_READ, WANT_WRITE)
+//  * @param timeout   timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
+//  * 
+//  * 
+//  * @return true if events specified in events are available, otherwise or on poll error, returns false
+//  */
+// template<>
+// bool    single_poll_impl<handler_types::POLL>(const unisock::socket_base& socket, int events, int timeout)
+// {
+//     struct pollfd poll_data;
+//     poll_data.events = events;
+//     poll_data.revents = 0;
+//     poll_data.fd = socket.get_socket();
 
-    int n_changes = ::poll(&poll_data, 1, timeout);
+//     int n_changes = ::poll(&poll_data, 1, timeout);
 
-    if (n_changes == 0)
-        return (false);
+//     if (n_changes == 0)
+//         return (false);
 
-    if (poll_data.revents & events)
-        return (true);
+//     if (poll_data.revents & events)
+//         return (true);
     
-    return (false);
-}
+//     return (false);
+// }
 
 } // ******** namespace _lib
 

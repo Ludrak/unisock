@@ -25,9 +25,17 @@ namespace unisock {
 namespace events {
 
 /**
- * @addindex
+ * @brief   list of unisock::actions to be handeled by action handler
+ * 
+ * @details defines a std::tuple containing the actions in type definition
+ * 
+ * @tparam _Actions     actions of the list
+ * 
+ * @ref events::action
+ * @ref events::action_handler
  */
-namespace _lib {
+template<typename ..._Actions>
+using actions_list = std::tuple<_Actions...>;
 
 
 /**
@@ -88,12 +96,21 @@ struct action
 
 
 /**
+ * @brief   Generic definition of action_handler for every object that is not an action list
+ * @details this class is declared for all action_handdler that does not specialize action_handler<actions_list<_Action...>>
+ * 
+ * @tparam _InvalidActionList
+ */
+template<typename _InvalidActionList>
+class action_handler;
+
+/**
  * @brief Represents an action handler containing a tuple of actions and defining a way to add and execute actions.
  * 
  * @tparam _Actions The types of actions.
  */
 template<typename ..._Actions>
-class action_handler
+class action_handler<actions_list<_Actions...>>
 {
     public:
         /**
@@ -108,7 +125,7 @@ class action_handler
          * @tparam _Atype tag type of action to get
          * @tparam _Aargs list of actions
          * 
-         * @ref events::_lib::action
+         * @ref events::action
          */
         template <typename _Atype, typename ..._Aargs>
         struct get_action;
@@ -214,55 +231,11 @@ class action_handler
         }
 
         /**
-         * @brief actions of the action_handler
+         * @brief   actions of the action_handler
          * 
          */
-        std::tuple<_Actions...> actions;
+        actions_list<_Actions...> actions;
 };
-
-
-/**
- * @brief expand tuple to parameter pack util
- * 
- * @tparam _Tuple   the tuple to expand into the class parameter pack
- * @tparam T        class template of some parameter pack 
- */
-template<typename _Tuple, template<typename...> class T>
-struct expand;
-
-/**
- * @brief   specialization of expand where _Tuple is an std::tuple of _Args types
- *
- * @details this configuration allow to define a **type** of the type of the template class defined by T
- *          with infered template parameter pack from the first std::tuple argument deduced with _Args
- *  
- * @tparam T 
- * @tparam _Args 
- */
-template<template<typename...> class T, typename... _Args>
-struct expand<std::tuple<_Args...>, T>
-{
-    /**
-     * @brief definition of type, where T is the specified template class and where _Args are deduced from the first std::tuple parameter pack in specialization
-     */
-    using type = T<_Args...>;
-};
-
-
-/**
- * @brief Represents an action handler class specialization with a tuple as the actions parameter pack.
- * 
- * @tparam _Args Type of the parameter pack in the tuple.
- */
-template<typename ..._Args>
-class action_handler<std::tuple<_Args...>> : public _lib::expand<std::tuple<_Args...>, action_handler>::type
-{
-    public:
-        action_handler() = default;
-};
-
-
-} // ******** namespace _lib
 
 
 } // ******** namespace events
