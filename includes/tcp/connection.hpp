@@ -209,7 +209,7 @@ class connection_base
         /**
          * @brief no empty constructor, tcp connections are always handeled by a tcp::server or tcp::client
          */
-        connection_base() = delete;
+        explicit connection_base() = delete;
 
 
         /**
@@ -217,7 +217,7 @@ class connection_base
          * 
          * @param handler handler to use for managing event on this socket
          */
-        connection_base(std::shared_ptr<unisock::events::handler> handler)
+        explicit connection_base(std::shared_ptr<unisock::events::handler> handler)
         : base_type(handler)
         {}
 
@@ -227,7 +227,7 @@ class connection_base
          * @param handler handler to use for managing event on this socket
          * @param socket  socket file descriptor
          */
-        connection_base(std::shared_ptr<unisock::events::handler> handler, int socket)
+        explicit connection_base(std::shared_ptr<unisock::events::handler> handler, int socket)
         : base_type(handler, socket)
         {}
 

@@ -102,7 +102,7 @@ struct action
      * @brief default constructor of action with empty function
      * 
      */   
-    action() = default;
+    explicit action() = default;
 
     /**
      * @brief overload operator= sets the function of the action to func
@@ -171,7 +171,7 @@ class action_handler<actions_list<_Actions...>>
          * @brief Construct a new action_handler object
          * 
          */
-        action_handler() = default;
+        explicit action_handler() = default;
 
   
         /**

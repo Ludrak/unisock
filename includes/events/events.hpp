@@ -67,19 +67,6 @@ poll(_PollableEntity& entity, int timeout = -1)
     return unisock::events::poll(entity.get_handler(), timeout);
 }
 
-// /**
-//  * @brief poll on single socket without handeling callback events
-//  * 
-//  * @param socket    the socket to poll on
-//  * @param events    the events to wait for on this socket (see WANT_READ, WANT_WRITE bitwise values)
-//  * @param timeout   timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
-//  * 
-//  * @return true if all events specified where polled, false on poll error or events not fullfilled in specified timeout 
-//  */
-// bool                    single_poll(const unisock::socket_base& socket, int events, int timeout = -1)
-// {
-//     return unisock::events::_lib::single_poll_impl<unisock::events::handler_type>(socket, events, timeout);
-// }
 
 } // ******** namespace events
 

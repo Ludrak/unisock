@@ -195,7 +195,7 @@ class server_impl   <
          * @brief   Construct a new server impl object
          * @details server_container_type will allocate a handler and client_container_type will be handeled on that handler
          */
-        server_impl()
+        explicit server_impl()
         : events::pollable_entity(), listeners_container(get_handler()), clients_container(get_handler())
         {}
 
@@ -204,7 +204,7 @@ class server_impl   <
          * 
          * @param handler   handler that will handle this tcp::server
          */
-        server_impl(std::shared_ptr<events::handler> handler)
+        explicit server_impl(std::shared_ptr<events::handler> handler)
         : events::pollable_entity(handler), listeners_container(get_handler()), clients_container(get_handler())
         {}
 

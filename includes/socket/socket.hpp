@@ -159,14 +159,14 @@ class socket<
          * 
          * @ref events::pollable_entity
          */
-        socket() = default;
+        explicit socket() = default;
 
         /**
          * @brief construct a socket, with reference to a handler
          * 
          * @param handler   the handler that will manage this socket
          */
-        socket(std::shared_ptr<unisock::events::handler> handler)
+        explicit socket(std::shared_ptr<unisock::events::handler> handler)
         : events::pollable_entity(handler)
         {}
 
@@ -179,7 +179,7 @@ class socket<
          * @param handler   the handler that will manage this socket
          * @param socket    socket file descriptor
          */
-        socket(std::shared_ptr<unisock::events::handler> handler, int socket)
+        explicit socket(std::shared_ptr<unisock::events::handler> handler, int socket)
         : socket_base(socket), events::pollable_entity(handler)
         {}
 

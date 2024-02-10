@@ -41,7 +41,8 @@ template<>
 class handler_impl<handler_types::POLL> : public handler_impl_base
 {
     public:
-        handler_impl() = default;
+
+        explicit handler_impl() = default;
 
         /**
          * @brief Destroy the handler impl<handler types::POLL> object

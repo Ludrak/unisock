@@ -31,27 +31,18 @@ class   socket_container : public events::pollable_entity
          * @brief default constructor, container is self handeled
          * 
          */
-        socket_container()
-        : events::pollable_entity()
-        {}
+        explicit socket_container() = default;
 
         /**
          * @brief handler constructor, container is handeled by an external handler
          * 
          * @param handler   external handler to use
          */
-        socket_container(std::shared_ptr<unisock::events::handler> handler)
+        explicit socket_container(std::shared_ptr<unisock::events::handler> handler)
         : events::pollable_entity(handler)
         {
         }
 
-        /**
-         * @brief destructor, closes the container
-         * 
-         */
-        ~socket_container()
-        {
-        }
 
     public:
         /**

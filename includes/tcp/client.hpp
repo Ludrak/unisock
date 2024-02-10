@@ -157,7 +157,7 @@ class client_impl   <
         /**
          * @brief Construct a new client_impl object, container must be created with reference to handler created by pollable_entity
          */
-        client_impl() 
+        explicit client_impl() 
         : events::pollable_entity(handler), container(get_handler())
         {
         }
@@ -167,7 +167,7 @@ class client_impl   <
          * 
          * @param handler   the handler that will handle this client
          */
-        client_impl(std::shared_ptr<unisock::events::handler> handler)
+        explicit client_impl(std::shared_ptr<unisock::events::handler> handler)
         : events::pollable_entity(handler), container(get_handler())
         {
         }

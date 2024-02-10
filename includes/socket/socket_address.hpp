@@ -137,7 +137,7 @@ class socket_address
          * @brief default constructor of an empty address
          * 
          */
-        socket_address();
+        explicit socket_address();
 
         /**
          * @brief copy constructor 

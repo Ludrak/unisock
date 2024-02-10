@@ -37,7 +37,7 @@ class socket_base
         /**
          * @brief default constructor default
          */
-        socket_base();
+        explicit socket_base();
 
 
         /**
@@ -47,10 +47,6 @@ class socket_base
          * 
          */
         socket_base(int socket);
-
-        ~socket_base()
-        {
-        }
 
 
         /**

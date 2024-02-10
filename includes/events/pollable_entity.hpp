@@ -61,15 +61,6 @@ class   pollable_entity
          */
         ~pollable_entity() = default;
 
-
-        // pollable_entity&    operator=(const pollable_entity& other)
-        // {
-        //     if (self_handled)
-        //         delete &handler;
-        //     handler = other.handler;
-        //     self_handled = false;
-        //     return (*this);
-        // }
     
     public:
         /**
@@ -85,19 +76,10 @@ class   pollable_entity
 
     protected:
         /**
-         * @brief reference to the handler handeling this entity
+         * @brief shared pointer to the handler handeling this entity
          * 
          */
-        // events::handler&    handler;
-
-
         std::shared_ptr<events::handler>    handler;
-    
-    private:
-        /**
-         * @brief true if handler was allocated in constructor
-         */
-        // bool                self_handled;
 };
 
 

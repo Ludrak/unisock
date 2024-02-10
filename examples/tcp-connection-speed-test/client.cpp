@@ -24,7 +24,7 @@ int main(int argc, char** argv)
     // setting up clients
     for (int i = 0; i < n_clients; ++i)
     {
-        clients.push_back({ handler });
+        clients.push_back(tcp::client( handler ));
 
         tcp::client& client = *clients.rbegin();
 

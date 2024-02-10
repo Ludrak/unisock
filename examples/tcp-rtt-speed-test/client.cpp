@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < n_clients; ++i)
     {
-        clients.push_back(handler);
+        clients.push_back(test_client(handler));
 
         test_client& client = *clients.rbegin();
 

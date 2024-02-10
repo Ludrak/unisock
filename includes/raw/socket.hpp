@@ -176,14 +176,14 @@ class socket_impl<
         /**
          * @brief empty constructor, socket will be self-handeled
          */
-        socket_impl() = default;
+        explicit socket_impl() = default;
 
         /**
          * @brief empty constructor, socket will be handeled by an external handler
          * 
          * @param handler handler to use for managing event on this socket
          */
-        socket_impl(std::shared_ptr<unisock::events::handler> handler)
+        explicit socket_impl(std::shared_ptr<unisock::events::handler> handler)
         : base_type(handler)
         {}
 
