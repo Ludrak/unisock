@@ -129,7 +129,12 @@ class handler_impl_base
         /**
          * @brief returns true if handler handles no socket
          */
-        virtual bool    empty() = 0;
+        virtual bool    empty() const = 0;
+
+        /**
+         * @brief returns the number of sockets handeled by this handler
+         */
+        virtual size_t  count() const = 0;
 
         /**
          * @brief set/unset read flag on socket for next poll on handler
@@ -169,7 +174,7 @@ class handler_impl : public handler_impl_base {};
  * @param timeout   timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
  */
 template<handler_types _Handler>
-void                    poll_impl(handler& handler, int timeout);
+void                    poll_impl(std::shared_ptr<unisock::events::handler> handler, int timeout);
 
 // /**
 //  * @brief poll on single sockets without handeling callback events

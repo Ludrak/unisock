@@ -105,5 +105,29 @@ if (build-examples)
 	)
 	target_link_libraries(raw-listener cppsockets)
 
+
+	# tcp connection speed test
+	add_executable(tcp-connection-speed-test-server
+		examples/tcp-connection-speed-test/server.cpp
+	)
+	target_link_libraries(tcp-connection-speed-test-server cppsockets)
+
+	add_executable(tcp-connection-speed-test-client
+		examples/tcp-connection-speed-test/client.cpp
+	)
+	target_link_libraries(tcp-connection-speed-test-client cppsockets)
+
+
+	# tcp rtt speed test
+	add_executable(tcp-rtt-speed-test-server
+		examples/tcp-rtt-speed-test/server.cpp
+	)
+	target_link_libraries(tcp-rtt-speed-test-server cppsockets)
+
+	add_executable(tcp-rtt-speed-test-client
+		examples/tcp-rtt-speed-test/client.cpp
+	)
+	target_link_libraries(tcp-rtt-speed-test-client cppsockets)
+
 endif(build-examples)
 

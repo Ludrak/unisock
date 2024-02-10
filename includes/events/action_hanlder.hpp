@@ -38,42 +38,71 @@ template<typename ..._Actions>
 using actions_list = std::tuple<_Actions...>;
 
 
+
+/**
+ * @brief   bitwise flags for action of action_handler
+ * @details flags to defines how the action handler should store and execute an action
+ */
+enum  action_flag
+{
+    /**
+     * @brief no action flags, action executed by default
+     */
+    DEFAULT =       0b0000,
+
+    /**
+     * @brief skip action when flag is set
+     */
+    SKIP =          0b0001,
+
+    /**
+     * @brief stops the execution of the whole list after the execution of the action
+     * 
+     */
+    STOP_AFTER =    0b0010,
+
+    /**
+     * @brief enqueues the action from end of list, if set on an action, the action must remain at the end of the list
+     * 
+     * @note  if previous actions where added with the QUEUE_END flag, the new action will be inserted **before** the already queued actions
+     */
+    QUEUE_END =     0b0100,
+};
+
+
 /**
  * @brief action struct
  * 
- * @tparam _Action      action tag type
+ * @tparam _ActionTag      action tag type
  * @tparam _Function    executor function prototype
  */
-template<typename _Action, typename _Function>
+template<typename _ActionTag, typename _Callback>
 struct action
 {
     /**
      * @brief type of tag of this action
      */
-    using type = _Action;
+    using type = _ActionTag;
     /**
      * @brief executor function type of this action
      */
-    using function = _Function;
+    using function_prototype = _Callback;
 
-    /**
-     * @brief empty function definition for empty constructor of action
-     * 
-     */
-    struct _empty
+    struct action_callback
     {
-        /** operator() overload to pass struct as empty function */
-        operator _Function()
-        { return [](auto&&...){}; }
-    } /** @brief empty struct */ empty_function;
+        _Callback   exec;
+        ushort      flags;
+
+        action_callback(const _Callback& func, ushort flags)
+        : exec(func), flags(flags)
+        {}
+    };
 
     /**
      * @brief default constructor of action with empty function
      * 
      */   
-    action()
-    : execute(empty_function)
-    {}
+    action() = default;
 
     /**
      * @brief overload operator= sets the function of the action to func
@@ -81,17 +110,42 @@ struct action
      * @param func  executor to be set for this action
      * @return this action
      */
-    action<_Action, _Function>& operator=(const function& func)
+    void    add_callback(const _Callback& func, ushort flags)//action<_ActionTag, _Callback>& operator=(const function& func)
     {
-        this->execute = func;
-        return (*this);
+        auto it = executor_list.crbegin();
+        for (; it != executor_list.crend(); ++it)
+        {
+            if (~it->flags & action_flag::QUEUE_END)
+                break ;
+        }
+        
+        this->executor_list.insert((it).base(), action_callback(func, flags));
     }
 
+    template<typename ..._Args>
+    void    execute(_Args&&... args)
+    {
+        for (action_callback& executor : executor_list)
+        {
+            if (executor.flags & action_flag::SKIP)
+                continue;
+                        
+            if (executor.flags & action_flag::STOP_AFTER)
+            {
+                executor.exec(std::forward<_Args>(args)...);
+                // if this object is destroyed by the execution, should return now
+                return ;
+            }
+            
+            executor.exec(std::forward<_Args>(args)...);
+        }
+    }
+
+private:
     /**
-     * @brief function to execute when executing
-     * @note  this will be changed to std::queue<function> to queue multiple tasks per actions
+     * @brief list of function to execute when executing
      */
-    function    execute;
+    std::vector<action_callback>   executor_list;
 };
 
 
@@ -118,6 +172,7 @@ class action_handler<actions_list<_Actions...>>
          * 
          */
         action_handler() = default;
+
   
         /**
          * @brief statically get an action from the action handler, used by action_handler::execute (see specializations details for more informations)
@@ -190,9 +245,12 @@ class action_handler<actions_list<_Actions...>>
          * @tparam _Function   Task to perform when the action is executed.
          * 
          * @param function     The function to be executed.
+         * @param flags        flags of the action (see action_flag)
+         *
+         * @ref action_flag
          */
         template<typename _ActionType, typename _Function>
-        constexpr void    on(_Function function)
+        constexpr void    on(_Function function, ushort flags = action_flag::DEFAULT)
         {
             using action_type = typename get_action<_ActionType, _Actions...>::type;
 
@@ -202,11 +260,13 @@ class action_handler<actions_list<_Actions...>>
                         >::value, "action type not found in actions list");
 
             static_assert(!std::is_same<
-                            typename action_type::function,
+                            typename action_type::function_prototype,
                             _Function
                         >::value, "invalid function handler for action");
 
-            std::get<action_type>(actions) = static_cast<typename action_type::function>(function);
+            std::get<action_type>(actions).add_callback(
+                static_cast<typename action_type::function_prototype>(function), flags
+            );
         }
 
     protected:

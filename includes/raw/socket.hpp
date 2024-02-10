@@ -54,7 +54,11 @@ namespace actions
      * 
      * @note    hook prototype: ```void  (const msghdr& message)```
      */
-    struct  RECVMSG {};
+    struct  RECVMSG
+    {
+        static constexpr const char* action_name = "RECVMSG";
+        static constexpr const char* callback_prototype = "void (const msghdr&)";
+    };
 
     /**
      * @brief   socket received bytes with recvfrom
@@ -64,7 +68,11 @@ namespace actions
      * 
      * @note    hook prototype: ```void  (const socket_address& address, const char* message, size_t size)```
      */
-    struct  RECVFROM {};
+    struct  RECVFROM
+    {
+        static constexpr const char* action_name = "RECVFROM";
+        static constexpr const char* callback_prototype = "void (const socket_address&, const char*, size_t)";
+    };
 
     /**
      * @brief   called on error
@@ -73,7 +81,11 @@ namespace actions
      * 
      * @note    hook prototype: ```void  (const std::string& function, int errno)```
      */
-    struct  ERROR {};
+    struct  ERROR
+    {
+        static constexpr const char* action_name = "ERROR";
+        static constexpr const char* callback_prototype = "void (const std::string&, int)";
+    };
 } // ******** namespace socket_actions
 
 
@@ -91,10 +103,8 @@ using   socket_actions = unisock::events::actions_list<
     unisock::events::action<actions::RECVFROM, 
             std::function< void (const socket_address& address, const char *message, size_t message_len) > >,
 
-
     unisock::events::action<actions::ERROR, 
             std::function< void (const std::string& func, int error) > >,
-
 
     _ExtendedActions...
 >;
@@ -173,7 +183,7 @@ class socket_impl<
          * 
          * @param handler handler to use for managing event on this socket
          */
-        socket_impl(unisock::events::handler& handler)
+        socket_impl(std::shared_ptr<unisock::events::handler> handler)
         : base_type(handler)
         {}
 

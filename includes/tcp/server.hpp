@@ -33,6 +33,8 @@ namespace tcp {
  * @ref tcp::server_impl
  * 
  * @ref events::action_handler
+ *
+ * @addindex
  */
 namespace server_actions
 {
@@ -43,7 +45,11 @@ namespace server_actions
      * 
      * @note    hook prototype: ```void  (tcp::server::server_connection* listener)```
      */
-    struct  LISTEN {};
+    struct  LISTEN
+    {
+        static constexpr const char* action_name = "TCP::LISTEN";
+        static constexpr const char* callback_prototype = "void (connection*)";
+    };
 
      /**
      * @brief   server accepted a new client
@@ -52,7 +58,11 @@ namespace server_actions
      * 
      * @note    hook prototype: ```void  (tcp::server::client_connection* client)```
      */
-    struct  ACCEPT {};
+    struct  ACCEPT
+    {
+        static constexpr const char* action_name = "TCP::ACCEPT";
+        static constexpr const char* callback_prototype = "void (connection*)";
+    };
 
     /**
      * @brief   a client disconnected
@@ -61,7 +71,11 @@ namespace server_actions
      * 
      * @note    hook prototype: ```void  (tcp::server::client_connection* client)```
      */
-    struct  DISCONNECT {};
+    struct  DISCONNECT
+    {
+        static constexpr const char* action_name = "TCP::DISCONNECT";
+        static constexpr const char* callback_prototype = "void (connection*)";
+    };
 } // ******** namespace server_actions
 
 
@@ -80,6 +94,9 @@ using   server_actions_list = unisock::events::actions_list<
         std::function<void (const std::string&, int)> >,
 
     events::action<server_actions::LISTEN,
+        std::function<void (_ServerConnection*)> >,
+
+    events::action<common_actions::CLOSED,
         std::function<void (_ServerConnection*)> >,
 
     events::action<common_actions::RECEIVE,
@@ -107,61 +124,6 @@ using   server = server_impl<
 
 
 
-/**
- * @brief   socket container for tcp::server listener sockets
- * 
- * @details inherits virtually socket_container
- * 
- * @tparam _ServerEntityData    data to add to servers listeners sockets 
- * 
- * @ref socket_container
- */
-template<typename ..._ServerEntityData>
-class server_listener_enitites_container : public virtual socket_container<tcp::connection_base<_ServerEntityData...>>
-{
-    public:
-        /**
-         * @brief constructor
-         */
-        server_listener_enitites_container() = default;
-
-        /**
-         * @brief constructor
-         * @param handler 
-         */
-        server_listener_enitites_container(events::handler& handler)
-        : socket_container<tcp::connection_base<_ServerEntityData...>>(handler)
-        {}
-};
-
-
-/**
- * @brief   socket container for tcp::server accepted sockets
- * 
- * @details inherits virtually socket_container
- * 
- * @tparam _ClientEntityData    data to add to servers accepted clients sockets 
- * 
- * @ref socket_container
- */
-template<typename ..._ClientEntityData>
-class server_client_enitites_container : public virtual socket_container<tcp::connection_base<_ClientEntityData...>>
-{
-    public:
-        /**
-         * @brief constructor
-         */
-        server_client_enitites_container() = default;
-
-        /**
-         * @brief constructor
-         * @param handler
-         */
-        server_client_enitites_container(events::handler& handler)
-        : socket_container<tcp::connection_base<_ClientEntityData...>>(handler)
-        {}
-};
-
 
 /**
  * @brief implementation of tcp::server
@@ -188,8 +150,7 @@ class server_impl   <
                 _ExtendedActions...
             >
         >,
-        protected server_listener_enitites_container<_ServerEntityData...>,
-        protected server_client_enitites_container<_ClientEntityData...>
+        public events::pollable_entity
 {
     protected:
         /**
@@ -209,11 +170,11 @@ class server_impl   <
         /**
          * @brief the type of the socket_container parent that holds the accepted sockets
          */
-        using client_container_type = server_client_enitites_container<_ClientEntityData...>;
+        using client_container_type = socket_container<tcp::connection_base<_ClientEntityData...>>;
         /**
          * @brief the type of the socket_container parent that holds the listeners sockets
          */
-        using server_container_type = server_listener_enitites_container<_ServerEntityData...>;
+        using server_container_type = socket_container<tcp::connection_base<_ServerEntityData...>>;
 
     public:
         /**
@@ -235,7 +196,7 @@ class server_impl   <
          * @details server_container_type will allocate a handler and client_container_type will be handeled on that handler
          */
         server_impl()
-        : server_container_type(), client_container_type(this->server_container_type::get_handler())
+        : events::pollable_entity(), listeners_container(get_handler()), clients_container(get_handler())
         {}
 
         /**
@@ -243,18 +204,11 @@ class server_impl   <
          * 
          * @param handler   handler that will handle this tcp::server
          */
-        server_impl(events::handler& handler)
-        : server_container_type(handler), client_container_type(handler)
+        server_impl(std::shared_ptr<events::handler> handler)
+        : events::pollable_entity(handler), listeners_container(get_handler()), clients_container(get_handler())
         {}
 
 
-        /**
-         * @brief move protected inherited member of socket_container to public
-         * 
-         * @ref socket_container<_SocketType>::get_handler
-         */
-        using server_container_type::get_handler;
-        
         /**
          * @brief calls both listener and accepted clients containers to close()
          * 
@@ -262,8 +216,8 @@ class server_impl   <
          */
         void    close()
         {
-            client_container_type::close();
-            server_container_type::close();
+            this->clients_container.close();
+            this->listeners_container.close();
         }
 
 
@@ -278,17 +232,26 @@ class server_impl   <
          */
         bool    listen(const std::string& hostname, ushort port, bool use_IPv6 = false)
         {
-            server_connection_type* socket = this->server_container_type::make_socket(use_IPv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0);
+            server_connection_type* socket { this->listeners_container.make_socket(use_IPv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0) };
             if (socket == nullptr)
             {
                 this->template execute<common_actions::ERROR>("socket", errno);
                 return false;
             }
 
+            // setting on closed action here so that common_actions::CLOSED hook is called on listen failure
+            socket->template on<unisock::basic_actions::CLOSED>(
+                [this, socket]() {
+                    this->template execute<common_actions::CLOSED>(reinterpret_cast<server_connection*>(socket));
+                }
+            );
+
+
             if (addrinfo_result::SUCCESS != socket_address::addrinfo(socket->address, hostname, use_IPv6 ? AF_INET6 : AF_INET))
             {
                 this->template execute<common_actions::ERROR>("getaddrinfo", errno);
-                this->server_container_type::delete_socket(socket->get_socket());
+                socket->close();
+                // this->server_container_type::delete_socket(socket->get_socket());
                 return false;
             }
             if (!use_IPv6)
@@ -299,23 +262,28 @@ class server_impl   <
             if (!socket->bind())
             {
                 this->template execute<common_actions::ERROR>("bind", errno);
-                this->server_container_type::delete_socket(socket->get_socket());
+                socket->close();
+                // this->server_container_type::delete_socket(socket->get_socket());
                 return false;
             }
 
             if (!socket->listen())
             {
                 this->template execute<common_actions::ERROR>("listen", errno);
-                this->server_container_type::delete_socket(socket->get_socket());
+                socket->close();
+                // this->server_container_type::delete_socket(socket->get_socket());
                 return false;
             }
 
             // receive events with accept 
-            socket->template on<unisock::basic_actions::READABLE>([this, socket](){ this->accept(socket); });
+            socket->template on<unisock::basic_actions::READABLE>(
+                [this, socket]() {
+                    this->accept(socket);
+                }
+            );
 
             // execute handler on listen
             this->template execute<server_actions::LISTEN>(reinterpret_cast<server_connection*>(socket));
-
             return (true);
         }
 
@@ -340,27 +308,30 @@ class server_impl   <
                 return ;
             }
 
-            client_connection_type* client = this->client_container_type::make_socket(socket);
+            client_connection_type* client = this->clients_container.make_socket(socket);
             if (client == nullptr)
             {
                 // insert could have failed and returned a nullptr however this should not happen
                 this->template execute<common_actions::ERROR>("insert", 0);
                 return ;
             }
+            
             client->address = address;
             client->template on<unisock::basic_actions::READABLE>(
-                [this, client]() {
-                    if (client->recv() == 0)
-                    {
-                        this->template execute<server_actions::DISCONNECT>(reinterpret_cast<client_connection*>(client));
-                        this->client_container_type::delete_socket(client->get_socket());
-                    }
+                [client]() {
+                    client->recv();
                 }
             );
-            
+                        
             client->template on<unisock::basic_actions::WRITEABLE>(
                 [client]() {
                     client->send_flush();
+                }
+            );
+
+            client->template on<unisock::basic_actions::CLOSED>(
+                [this, client]() {
+                    this->template execute<server_actions::DISCONNECT>(reinterpret_cast<client_connection*>(client));
                 }
             );
 
@@ -373,6 +344,10 @@ class server_impl   <
             this->template execute<server_actions::ACCEPT>(reinterpret_cast<client_connection*>(client));
         }
 
+
+    private:
+        server_container_type   listeners_container;
+        client_container_type   clients_container;
 };
 
 
@@ -380,3 +355,4 @@ class server_impl   <
 } // ******** namespace tcp
 
 } // ******** namespace unisock
+

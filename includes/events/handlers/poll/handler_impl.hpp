@@ -41,6 +41,8 @@ template<>
 class handler_impl<handler_types::POLL> : public handler_impl_base
 {
     public:
+        handler_impl() = default;
+
         /**
          * @brief Destroy the handler impl<handler types::POLL> object
          * 
@@ -75,7 +77,12 @@ class handler_impl<handler_types::POLL> : public handler_impl_base
         /**
          * @brief returns true if handler handles no socket
          */
-        bool    empty() override;
+        bool    empty() const override;
+
+        /**
+         * @brief returns the number of sockets handeled by this handler
+         */
+        size_t  count() const override;
 
         /**
          * @brief set/unset read flag on socket for next poll on handler

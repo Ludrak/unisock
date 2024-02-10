@@ -40,9 +40,9 @@ namespace events {
  * @param handler   the handler to poll on
  * @param timeout   timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
  */
-bool                    poll(handler& handler, int timeout = -1)
+bool                    poll(std::shared_ptr<unisock::events::handler> handler, int timeout = -1)
 {
-    if (handler.empty())
+    if (handler->empty())
         return (false);
     unisock::events::_lib::poll_impl<unisock::events::handler_type>(handler, timeout);
     return (true);

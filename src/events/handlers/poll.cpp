@@ -54,9 +54,15 @@ void handler_impl<handler_types::POLL>::del_socket(int socket)
 
 
 
-bool handler_impl<handler_types::POLL>::empty()
+bool handler_impl<handler_types::POLL>::empty() const
 {
     return (this->sockets.empty());
+}
+
+
+size_t handler_impl<handler_types::POLL>::count() const
+{
+    return (this->sockets.size());
 }
 
 

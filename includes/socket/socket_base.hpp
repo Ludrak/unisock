@@ -48,6 +48,11 @@ class socket_base
          */
         socket_base(int socket);
 
+        ~socket_base()
+        {
+        }
+
+
         /**
          * @brief opens a new socket file descriptor with args for **socket()** syscall
          * 

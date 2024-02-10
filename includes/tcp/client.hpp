@@ -34,17 +34,23 @@ namespace tcp {
  * @ref tcp::client_actions_list
  * 
  * @ref events::action_handler
+ * 
+ * @addindex 
  */
 namespace client_actions
 {
-     /**
+    /**
      * @brief   successfully connected on server
      * 
      * @details this event will be called when tcp::client::connect() is successfull, 
      * 
      * @note    hook prototype: ```void  (tcp::client::connection*)```
      */
-    struct  CONNECT {};
+    struct  CONNECT
+    {
+        static constexpr const char* action_name = "TCP::CONNECT";
+        static constexpr const char* callback_prototype = "void (connection*)";
+    };
 } // ******** namespace client_actions
 
 
@@ -63,8 +69,10 @@ using   client_actions_list = unisock::events::actions_list<
     events::action<common_actions::ERROR,
         std::function<void (const std::string&, int)> >,
 
-
     events::action<client_actions::CONNECT,
+        std::function<void (_Connection*)> >,
+
+    events::action<common_actions::CLOSED,
         std::function<void (_Connection*)> >,
 
     events::action<common_actions::RECEIVE,
@@ -122,7 +130,7 @@ class client_impl   <
                 _ExtendedActions...
             >
         >,
-        protected socket_container<tcp::connection_base<_ConnectionEntityData...>>
+        public events::pollable_entity
 {
     protected:
         /**
@@ -147,34 +155,33 @@ class client_impl   <
         using connection = tcp::connection<_ConnectionEntityData...>;
 
         /**
-         * @brief Construct a new client_impl object
+         * @brief Construct a new client_impl object, container must be created with reference to handler created by pollable_entity
          */
-        client_impl()
-        : container_type()
-        {}
+        client_impl() 
+        : events::pollable_entity(handler), container(get_handler())
+        {
+        }
 
         /**
          * @brief Construct a new client impl_object handeled by an external handler
          * 
          * @param handler   the handler that will handle this client
          */
-        client_impl(events::handler& handler)
-        : container_type(handler)
-        {}
+        client_impl(std::shared_ptr<unisock::events::handler> handler)
+        : events::pollable_entity(handler), container(get_handler())
+        {
+        }
 
-        /**
-         * @brief move protected inherited member of socket_container to public
-         * 
-         * @ref socket_container<_SocketType>::get_handler
-         */
-        using container_type::get_handler;
-        
         /**
          * @brief move protected inherited member of socket_container to public
          * 
          * @ref socket_container<_SocketType>::close
          */
-        using container_type::close;
+        // using container_type::close;
+        void    close()
+        {
+            container.close();
+        }
 
 
         /**
@@ -190,17 +197,25 @@ class client_impl   <
          */
         bool    connect(const std::string& hostname, ushort port, bool use_IPv6 = false)
         {
-            connection_type* conn = this->make_socket(use_IPv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0);
+            connection_type* conn = this->container.make_socket(use_IPv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0);
             if (conn == nullptr)
             {
                 this->template execute<common_actions::ERROR>("socket", errno);
                 return false;
             }
 
+            conn->template on<unisock::basic_actions::CLOSED>(
+                [this, conn]()
+                {
+                    this->template execute<common_actions::CLOSED>(reinterpret_cast<connection*>(conn));
+                }
+            );
+
             if (addrinfo_result::SUCCESS != socket_address::addrinfo(conn->address, hostname, use_IPv6 ? AF_INET6 : AF_INET))
             {
                 this->template execute<common_actions::ERROR>("getaddrinfo", errno);
-                this->delete_socket(conn->get_socket());
+                conn->close();
+                // this->delete_socket(conn->get_socket());
                 return false;
             }
             if (!use_IPv6)
@@ -210,13 +225,20 @@ class client_impl   <
 
             if (!conn->connect())
             {
-                this->delete_socket(conn->get_socket());
+                conn->close();
+                // this->delete_socket(conn->get_socket());
                 this->template execute<common_actions::ERROR>("listen", errno);
                 return false;
             }
 
             // receive events with this action handler 
-            conn->template on<unisock::basic_actions::READABLE>([conn]() { conn->recv(); });
+            conn->template on<unisock::basic_actions::READABLE>(
+                [conn]()
+                {
+                    conn->recv();
+                }
+            );
+
             conn->template on<tcp::connection_actions::RECV>(
                 [this, conn](const char* message, size_t message_len)
                 {
@@ -224,7 +246,6 @@ class client_impl   <
                 }
             );
 
-            this->handler.add_socket(conn->get_socket(), conn);
             this->template execute<client_actions::CONNECT>(reinterpret_cast<connection*>(conn));
             return (true);
         }
@@ -239,13 +260,16 @@ class client_impl   <
          */
         void    send(const char* message, size_t message_len)
         {
-            // TODO: error check on send
+            // TODO: error check on global send
             for (connection_type* connection : this->sockets)
             {
                 connection->send(message, message_len);
             }
         }
 
+
+    protected:
+        container_type  container;
 };
 
 

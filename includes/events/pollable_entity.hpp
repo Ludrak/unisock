@@ -33,28 +33,43 @@ class   pollable_entity
          * @brief default constructor, entity is self handeled
          * 
          */
-        pollable_entity()
-        : handler(*(new events::handler())), self_handled(true)
-        {}
+        explicit pollable_entity()
+        : handler(std::make_shared<events::handler>())//handler(), self_handled(true)
+        {
+        }
 
         /**
          * @brief handler constructor, handler is a reference to an external handler
          * 
          * @param handler   external handler to use
          */
-        pollable_entity(events::handler& handler)
-        : handler(handler), self_handled(false)
-        {}
+        explicit pollable_entity(std::shared_ptr<events::handler> handler)
+        : handler(handler)//, self_handled(false)
+        {
+        }
+
+        /**
+         * @brief copy constructor, local handler ref is deleted if it was allocated, new ref is set from **copy** handler ref
+         * 
+         * @param handler   external handler to use
+         */
+        explicit pollable_entity(const pollable_entity& copy) = default;
 
         /**
          * @brief destructor, destroys the handler if it was allocated in constructor
          * 
          */
-        ~pollable_entity()
-        {
-            if (self_handled)
-                delete &handler;
-        }
+        ~pollable_entity() = default;
+
+
+        // pollable_entity&    operator=(const pollable_entity& other)
+        // {
+        //     if (self_handled)
+        //         delete &handler;
+        //     handler = other.handler;
+        //     self_handled = false;
+        //     return (*this);
+        // }
     
     public:
         /**
@@ -62,9 +77,9 @@ class   pollable_entity
          * 
          * @return handler& 
          */
-        handler&  get_handler()
+        std::shared_ptr<events::handler>    get_handler()
         {
-            return (this->handler);
+            return handler;
         }
 
 
@@ -73,13 +88,16 @@ class   pollable_entity
          * @brief reference to the handler handeling this entity
          * 
          */
-        events::handler&    handler;
+        // events::handler&    handler;
+
+
+        std::shared_ptr<events::handler>    handler;
     
     private:
         /**
          * @brief true if handler was allocated in constructor
          */
-        bool                self_handled;
+        // bool                self_handled;
 };
 
 

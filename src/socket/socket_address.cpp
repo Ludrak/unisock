@@ -49,10 +49,9 @@ socket_address&   	socket_address::operator=(const socket_address& other)
 
 
 std::string 		socket_address::get_ip(const socket_address& address)
-{
+{		
 	char ip[IP_ADDRESS_BUFFER_SIZE] { 0 };
-	// if (address.family() != AF_INET && address.family() != AF_INET6)
-	//     throw (std::logic_error(std::string("getting ip address of invalid address family: ") + std::to_string(address.family())));
+
 	switch (address.family())
 	{
 	case AF_INET:
@@ -190,7 +189,6 @@ socket_address socket_address::from(const std::string& hostname, const in_port_t
 	if (address.family() != AF_INET && address.family() != AF_INET6)
 		throw std::logic_error("invalid inet address from constructor: required port but address is not of type AF_INET or AF_INET6");
 	
-	std::cout << "set port " <<std::endl;
 	address.to<sockaddr_in>()->sin_port = htons(port);
 	return (address);
 }

@@ -24,7 +24,7 @@ namespace unisock {
  * 
  */
 template<typename _SocketType>
-class   socket_container : public virtual events::pollable_entity
+class   socket_container : public events::pollable_entity
 {
     public:
         /**
@@ -40,9 +40,10 @@ class   socket_container : public virtual events::pollable_entity
          * 
          * @param handler   external handler to use
          */
-        socket_container(events::handler& handler)
+        socket_container(std::shared_ptr<unisock::events::handler> handler)
         : events::pollable_entity(handler)
-        {}
+        {
+        }
 
         /**
          * @brief destructor, closes the container
@@ -50,7 +51,6 @@ class   socket_container : public virtual events::pollable_entity
          */
         ~socket_container()
         {
-            close();
         }
 
     public:
@@ -67,13 +67,9 @@ class   socket_container : public virtual events::pollable_entity
         {
             assert(socket > 0);
 
-            _SocketType sockobj { this->handler, socket };
-            auto insert = this->sockets.insert(std::make_pair(sockobj.get_socket(), sockobj));
-            if (!insert.second)
-                return nullptr; // insert error, should not happen unless socket was not previously deleted
-
-            this->handler.add_socket(sockobj.get_socket(), &insert.first->second);
-            return (&insert.first->second);
+            _SocketType sockobj = _SocketType(this->handler, socket);
+            _SocketType* sockptr = _insert_socket(sockobj);
+            return (sockptr);
         }
 
         /**
@@ -89,42 +85,14 @@ class   socket_container : public virtual events::pollable_entity
          */
         _SocketType*    make_socket(int domain, int type, int protocol)
         {
-            // _SocketType sockobj { this->handler };
-
-            // if (!sockobj.open(domain, type, protocol))
-            //     return nullptr; // socket() failed
-
-            // auto insert = this->sockets.insert(std::make_pair(sockobj.get_socket(), sockobj));
-            // if (!insert.second)
-            //     return nullptr; // insert error, should not happen unless socket was not previously deleted
-            
-            // return (&insert.first->second);
-
-            _SocketType sockobj { this->handler };
+            _SocketType sockobj = _SocketType(this->handler);
 
             // calls socket_base::open to avoid adding sockobj pointer to the handler, socket is added to the handler below
             if (!sockobj.socket_base::open(domain, type, protocol))
                 return nullptr; // socket() failed
 
-            auto insert = this->sockets.insert(std::make_pair(sockobj.get_socket(), sockobj));
-            if (!insert.second)
-                return nullptr; // insert error, should not happen unless socket was not previously deleted
-
-            this->handler.add_socket(sockobj.get_socket(), &insert.first->second);
-            return (&insert.first->second);
-        }
-
-        /**
-         * @brief deletes a socket from the container
-         * 
-         * @param socket socket file descriptor of the socket object to delete
-         */
-        void            delete_socket(int socket)
-        {
-            // TODO: maybe call close handler here
-            this->handler.delete_socket(socket);
-            this->sockets.erase(socket);
-            ::close(socket);
+            _SocketType* sockptr = _insert_socket(sockobj);
+            return (sockptr);
         }
 
 
@@ -136,13 +104,33 @@ class   socket_container : public virtual events::pollable_entity
         {
             while (!this->sockets.empty())
             {
-                this->handler.delete_socket(this->sockets.begin()->first);
+                // will call basic_actions::CLOSE handler that deletes the socket from the std::map
                 this->sockets.begin()->second.close();
-                this->sockets.erase(this->sockets.begin());
             }
         }
 
     protected:
+        _SocketType*    _insert_socket(const _SocketType& sockobj)
+        {
+            auto insert = this->sockets.insert(std::make_pair(sockobj.get_socket(), sockobj));
+            if (!insert.second)
+                return nullptr; // insert error, should not happen unless socket was not previously deleted
+
+            auto* sockptr { &insert.first->second };
+
+            // adds action to delete the socket data, calls 
+            int socket_key = insert.first->first;
+            sockptr->template on<unisock::basic_actions::CLOSED>(
+                [this, socket_key](){
+                    this->sockets.erase(socket_key);
+                },
+                events::action_flag::QUEUE_END | events::action_flag::STOP_AFTER
+            );
+
+            this->handler->add_socket(sockptr->get_socket(), sockptr);
+            return (sockptr);
+        }
+
         /**
          * @brief map containing the socket object mapped on their file descriptor
          * 

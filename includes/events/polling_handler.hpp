@@ -50,7 +50,12 @@ class handler : public _lib::handler_impl<handler_type>
         /**
          * @brief Construct a new handler object
          */
-        handler() = default;
+        // handler() = default;
+        explicit handler()
+        : _lib::handler_impl<handler_type>()
+        {}
+
+        explicit handler(const handler& copy) = delete;
 
         /**
          * @brief Destroy the handler object
@@ -108,7 +113,7 @@ class handler : public _lib::handler_impl<handler_type>
         {
             return (old_ref != get_ref());
         }
-    
+
     private:
         /**
          * @brief short to keep track of inner containers iterators validity,
@@ -122,7 +127,7 @@ class handler : public _lib::handler_impl<handler_type>
          * @brief friend with the correct events::poll implementation
          * @details this is so that events::poll can access its members to route back parsed events to callbacks
          */
-        friend void _lib::poll_impl<handler_type>(handler&, int);
+        friend void _lib::poll_impl<handler_type>(std::shared_ptr<handler>, int);
 };
 
 

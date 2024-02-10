@@ -33,7 +33,7 @@ namespace tcp {
 template<typename ..._Args>
 class server_impl;
 
-// predefinition for friend in tcp::connection
+
 template<typename ..._ExtendedActions, typename ..._ServerEntityData, typename ..._ClientEntityData>
 class server_impl   <
                 /* list of actions to be extended */
@@ -53,7 +53,7 @@ class server_impl   <
 template<typename ..._Args>
 class client_impl;
 
-// predefinition for friend in tcp::connection
+
 template<typename ..._ExtendedActions, typename ..._ConnectionEntityData>
 class client_impl   <
                 /* list of actions to be extended */
@@ -79,6 +79,8 @@ class client_impl   <
  * @ref tcp::server_actions_list
  * 
  * @ref events::action_handler
+ * 
+ * @addindex
  */
 namespace common_actions
 {
@@ -90,7 +92,23 @@ namespace common_actions
      * @note    server hook prototype: ```void  (tcp::client::connection* client, const char* message, size_t message_len)``` \n
      *          client hook prototype: ```void  (tcp::client::connection* connection, const char* message, size_t message_len)``` \n
      */
-    struct  RECEIVE {};
+    struct  RECEIVE
+    {
+        static constexpr const char* action_name = "TCP::RECEIVE";
+        static constexpr const char* callback_prototype = "void (connection*, const char*, size_t)";
+    };
+
+    /**
+     * @brief   either a tcp::server listener connection or a tcp::client connection to a server was closed
+     *
+     * @note    server hook prototype: ```void  (tcp::server::server_connection* server_connection)``` \n
+     *          client hook prototype: ```void  (tcp::client::connection* connection)``` \n
+     */
+    struct  CLOSED 
+    {
+        static constexpr const char* action_name = "TCP::CLOSED";
+        static constexpr const char* callback_prototype = "void (connection*)";
+    };
 
     /**
      * @brief   called on error
@@ -99,19 +117,18 @@ namespace common_actions
      * 
      * @note    hook prototype: ```void  (const std::string& function, int errno)```
      */
-    struct  ERROR {};
+    struct  ERROR
+    {
+        static constexpr const char* action_name = "TCP::ERROR (common actions)";
+        static constexpr const char* callback_prototype = "void (const std::string&, int)";
+    };
 } // ******** namespace common_actions
 
 
 
 
 /**
- * @brief actions tags to hook tcp::connection_base action_handler events
- * 
- */
-
-/**
- * @brief   actions for tcp::connection_base
+ * @brief    actions tags to hook tcp::connection_base action_handler events
  * 
  * @details defines structs as tags for actions of action_handler,
  *          this tags can be used on the on() and execute() members
@@ -121,6 +138,8 @@ namespace common_actions
  * @ref tcp::connection_actions_list
  * 
  * @ref events::action_handler
+ * 
+ * @addindex
  */
 namespace connection_actions
 {
@@ -130,7 +149,11 @@ namespace connection_actions
      * 
      * @note    hook prototype: ```void  (const char* message, size_t bytes)```
      */
-    struct  RECV {};
+    struct  RECV
+    {
+        static constexpr const char* action_name = "TCP::RECV";
+        static constexpr const char* callback_prototype = "void (const char*, size_t)";
+    };
 
     /**
      * @brief   called on error
@@ -139,7 +162,11 @@ namespace connection_actions
      * 
      * @note    hook prototype: ```void  (const std::string& function, int errno)```
      */
-    struct  ERROR {};
+    struct  ERROR
+    {
+        static constexpr const char* action_name = "TCP::ERROR (connection actions)";
+        static constexpr const char* callback_prototype = "void (const std::string&, int)";
+    };
 };
 
 
@@ -190,7 +217,7 @@ class connection_base
          * 
          * @param handler handler to use for managing event on this socket
          */
-        connection_base(unisock::events::handler& handler)
+        connection_base(std::shared_ptr<unisock::events::handler> handler)
         : base_type(handler)
         {}
 
@@ -200,7 +227,7 @@ class connection_base
          * @param handler handler to use for managing event on this socket
          * @param socket  socket file descriptor
          */
-        connection_base(unisock::events::handler& handler, int socket)
+        connection_base(std::shared_ptr<unisock::events::handler> handler, int socket)
         : base_type(handler, socket)
         {}
 
@@ -233,7 +260,7 @@ class connection_base
             if (static_cast<size_t>(n_bytes) < message_len)
             {
                 send_buffer.push(std::string(message + n_bytes, message_len - n_bytes));
-                this->handler.socket_want_write(this->get_socket(), true);
+                this->handler->socket_want_write(this->get_socket(), true);
                 return (true);
             }
             return (true);
@@ -286,6 +313,7 @@ class connection_base
             }
             if (n_bytes == 0)
             {
+                this->close();//template execute<basic_actions::CLOSED>();
                 return n_bytes;
             }
             this->template execute<connection_actions::RECV>(buffer, n_bytes);
@@ -315,7 +343,7 @@ class connection_base
                 return ;
             }
             send_buffer.pop();
-            this->handler.socket_want_write(this->get_socket(), false);
+            this->handler->socket_want_write(this->get_socket(), false);
         }
         
     private:
@@ -373,6 +401,11 @@ class connection : private tcp::connection_base<_EntityData...>
          * @brief move of address field to public
          */
         using base_type::send;
+
+        /**
+         * @brief move of data field to public
+         */
+        using base_type::data;        
 };
 
 

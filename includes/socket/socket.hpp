@@ -34,6 +34,7 @@ using entity_model = std::tuple<_EntityData...>;
 
 
 
+
 /**
  * @brief   actions tags to hook unisock::socket action_handler events
  * 
@@ -48,6 +49,8 @@ using entity_model = std::tuple<_EntityData...>;
  * @ref unisock::basic_actions_list
  * 
  * @ref events::action_handler
+ * 
+ * @addindex
  */
 namespace basic_actions
 {
@@ -61,7 +64,11 @@ namespace basic_actions
      * 
      * @ref     events::handler::socket_want_read
      */
-    struct  READABLE {};
+    struct  READABLE
+    {
+        static constexpr const char* action_name = "READABLE";
+        static constexpr const char* callback_prototype = "void ()";
+    };
 
     /**
      * @brief   socket is ready to send bytes
@@ -72,7 +79,25 @@ namespace basic_actions
      * 
      * @ref     events::handler::socket_want_read
      */
-    struct  WRITEABLE {};
+    struct  WRITEABLE
+    {
+        static constexpr const char* action_name = "WRITEABLE";
+        static constexpr const char* callback_prototype = "void ()";
+    };
+
+
+    /**
+     * @brief   called when close() is called on a unisock::socket
+     * 
+     * @note    this event will be triggered either manually or when recv returned 0
+     * 
+     * @note    hook prototype: ```void  ()```
+     */
+    struct  CLOSED
+    {
+        static constexpr const char* action_name = "CLOSED";
+        static constexpr const char* callback_prototype = "void ()";
+    };
 };
 
 
@@ -85,6 +110,7 @@ template<typename ..._Actions>
 using basic_actions_list = std::tuple<
     events::action<basic_actions::READABLE, std::function< void (void) > >,
     events::action<basic_actions::WRITEABLE, std::function< void (void) > >,
+    events::action<basic_actions::CLOSED, std::function< void (void) > >,
     _Actions...
 >;
 
@@ -130,17 +156,17 @@ class socket<
 
         /**
          * @brief default constructor, allocates its own handler, and deletes it in its constructor
+         * 
+         * @ref events::pollable_entity
          */
-        socket()
-        : events::pollable_entity()
-        {}
+        socket() = default;
 
         /**
          * @brief construct a socket, with reference to a handler
          * 
          * @param handler   the handler that will manage this socket
          */
-        socket(events::handler& handler)
+        socket(std::shared_ptr<unisock::events::handler> handler)
         : events::pollable_entity(handler)
         {}
 
@@ -153,7 +179,7 @@ class socket<
          * @param handler   the handler that will manage this socket
          * @param socket    socket file descriptor
          */
-        socket(events::handler& handler, int socket)
+        socket(std::shared_ptr<unisock::events::handler> handler, int socket)
         : socket_base(socket), events::pollable_entity(handler)
         {}
 
@@ -178,7 +204,7 @@ class socket<
         {
             if (!socket_base::open(domain, type, protocol))
                 return (false);
-            this->handler.add_socket(get_socket(), this);
+            this->handler->add_socket(get_socket(), this);
             return (true);
         }
 
@@ -188,8 +214,13 @@ class socket<
          */
         void    close() override
         {
+            // deleting from handler
+            this->handler->delete_socket(get_socket());
+            // closes the socket so any operations on it on basic_actions::CLOSED will be invalid,
+            // socket is set to -1
             socket_base::close();
-            this->handler.delete_socket(get_socket());
+            // calling callback closed
+            this->template execute<basic_actions::CLOSED>();
         }
 
         /**
@@ -211,7 +242,7 @@ class socket<
          */
         void    set_want_write(bool want_write)
         {
-            this->handler.socket_want_write(get_socket(), want_write);
+            this->handler->socket_want_write(get_socket(), want_write);
         }
 
         /**
@@ -221,7 +252,7 @@ class socket<
          */
         void    set_want_read(bool want_read)
         {
-            this->handler.socket_want_read(get_socket(), want_read);
+            this->handler->socket_want_read(get_socket(), want_read);
         }
 
         /**
@@ -240,15 +271,15 @@ class socket<
             this->template execute <basic_actions::WRITEABLE>();
         }
 
-        /**
-         * @brief returns the reference to the handler handeling this socket
-         * 
-         * @return handler handeling this socket
-         */
-        events::handler&    get_handler()
-        {
-            return (this->handler); 
-        }
+        // /**
+        //  * @brief returns the reference to the handler handeling this socket
+        //  * 
+        //  * @return handler handeling this socket
+        //  */
+        // events::handler&    get_handler()
+        // {
+        //     return (this->handler); 
+        // }
 
 
         /**

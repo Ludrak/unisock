@@ -42,13 +42,13 @@ namespace _lib {
  * @param timeout timeout in milliseconds for poll, -1 waits indefinitely, 0 dont wait
  */
 template<>
-void    poll_impl<handler_types::POLL>(handler& handler, int timeout)
+void    poll_impl<handler_types::POLL>(std::shared_ptr<unisock::events::handler> handler, int timeout)
 {
-    int n_changes = poll(reinterpret_cast<pollfd*>(handler.sockets.data()), handler.sockets.size(), timeout);
-    for (auto it = handler.sockets.begin(); it != handler.sockets.end(); ++it)
+    int n_changes = poll(reinterpret_cast<pollfd*>(handler->sockets.data()), handler->sockets.size(), timeout);
+    for (auto it = handler->sockets.begin(); it != handler->sockets.end(); ++it)
     {
         auto&   socket = *it;
-        ushort  handler_ref = handler.get_ref();
+        ushort  handler_ref = handler->get_ref();
 
         if (socket.revents == 0)
             continue ;
@@ -56,21 +56,21 @@ void    poll_impl<handler_types::POLL>(handler& handler, int timeout)
         if (socket.revents & POLLIN)
         {
             // client pointer will be at the same place in the socket_ptrs vector
-            unisock::socket_base* sockobj = handler.socket_ptrs[it - handler.sockets.begin()];
+            unisock::socket_base* sockobj = handler->socket_ptrs[it - handler->sockets.begin()];
             sockobj->on_readable();
         }
-        if (handler.ref_has_changed(handler_ref))
+        if (handler->ref_has_changed(handler_ref))
             break;
         // socket is available for writing
         if (socket.revents & POLLOUT)
         {
             // client pointer will be at the same place in the socket_ptrs vector
-            auto* sockobj = handler.socket_ptrs[it - handler.sockets.begin()];
+            auto* sockobj = handler->socket_ptrs[it - handler->sockets.begin()];
             sockobj->on_writeable();
         }
 
         n_changes--;
-        if (n_changes == 0 || handler.ref_has_changed(handler_ref))
+        if (n_changes == 0 || handler->ref_has_changed(handler_ref))
             break;
     }
 }

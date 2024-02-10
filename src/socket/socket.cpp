@@ -25,6 +25,7 @@ bool    socket_base::open(int domain, int type, int protocol)
     return (true);
 }
 
+
 void    socket_base::close()
 {
     if (_sock < 0)
@@ -33,11 +34,11 @@ void    socket_base::close()
     _sock = -1;
 }
 
+
 int     socket_base::get_socket() const
 {
     return (_sock);
 }
-
 
 
 bool    socket_base::setsockopt(int level, int option_name, const void* option_value, socklen_t option_len) const
@@ -49,6 +50,5 @@ bool    socket_base::getsockopt(int level, int option_name, void* option_value, 
 {
     return (0 == ::getsockopt(this->_sock, level, option_name, option_value, option_len));
 }
-
 
 } // ******** namespace events
