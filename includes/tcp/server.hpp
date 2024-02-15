@@ -90,7 +90,7 @@ namespace server_actions
  */
 template<typename _ServerConnection, typename _ClientConnection, typename ..._ExtendedActions>
 using   server_actions_list = unisock::events::actions_list<
-    events::action<common_actions::ERROR,
+    events::action<basic_actions::ERROR,
         std::function<void (const std::string&, int)> >,
 
     events::action<server_actions::LISTEN,
@@ -228,14 +228,14 @@ class server_impl   <
          * @param port      the port to listen on
          * @param use_IPv6  use IPv6
          * 
-         * @return false if server was not able to listen on address (error is called in tcp::common_actions::ERROR hook of tcp::server)
+         * @return false if server was not able to listen on address (error is called in tcp::basic_actions::ERROR hook of tcp::server)
          */
         bool    listen(const std::string& hostname, ushort port, bool use_IPv6 = false)
         {
             server_connection_type* socket { this->listeners_container.make_socket(use_IPv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0) };
             if (socket == nullptr)
             {
-                this->template execute<common_actions::ERROR>("socket", errno);
+                this->template execute<basic_actions::ERROR>("socket", errno);
                 return false;
             }
 
@@ -249,7 +249,7 @@ class server_impl   <
 
             if (addrinfo_result::SUCCESS != socket_address::addrinfo(socket->address, hostname, use_IPv6 ? AF_INET6 : AF_INET))
             {
-                this->template execute<common_actions::ERROR>("getaddrinfo", errno);
+                this->template execute<basic_actions::ERROR>("getaddrinfo", errno);
                 socket->close();
                 // this->server_container_type::delete_socket(socket->get_socket());
                 return false;
@@ -261,7 +261,7 @@ class server_impl   <
 
             if (!socket->bind())
             {
-                this->template execute<common_actions::ERROR>("bind", errno);
+                this->template execute<basic_actions::ERROR>("bind", errno);
                 socket->close();
                 // this->server_container_type::delete_socket(socket->get_socket());
                 return false;
@@ -269,7 +269,7 @@ class server_impl   <
 
             if (!socket->listen())
             {
-                this->template execute<common_actions::ERROR>("listen", errno);
+                this->template execute<basic_actions::ERROR>("listen", errno);
                 socket->close();
                 // this->server_container_type::delete_socket(socket->get_socket());
                 return false;
@@ -304,7 +304,7 @@ class server_impl   <
             int socket = ::accept(connection->get_socket(), address.to<sockaddr>(), &address_size);
             if (socket < 0)
             {
-                this->template execute<common_actions::ERROR>("accept", errno);
+                this->template execute<basic_actions::ERROR>("accept", errno);
                 return ;
             }
 
@@ -312,7 +312,7 @@ class server_impl   <
             if (client == nullptr)
             {
                 // insert could have failed and returned a nullptr however this should not happen
-                this->template execute<common_actions::ERROR>("insert", 0);
+                this->template execute<basic_actions::ERROR>("insert", 0);
                 return ;
             }
             

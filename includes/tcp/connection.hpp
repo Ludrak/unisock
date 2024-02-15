@@ -111,7 +111,7 @@ namespace common_actions
     };
 
     /**
-     * @brief   called on error
+     * @brief   called on syscall error
      * 
      * @details specifies function which returned the error and errno for that error
      * 
@@ -154,19 +154,6 @@ namespace connection_actions
         static constexpr const char* action_name = "TCP::RECV";
         static constexpr const char* callback_prototype = "void (const char*, size_t)";
     };
-
-    /**
-     * @brief   called on error
-     * 
-     * @details specifies function which returned the error and errno for that error
-     * 
-     * @note    hook prototype: ```void  (const std::string& function, int errno)```
-     */
-    struct  ERROR
-    {
-        static constexpr const char* action_name = "TCP::ERROR (connection actions)";
-        static constexpr const char* callback_prototype = "void (const std::string&, int)";
-    };
 };
 
 
@@ -178,10 +165,7 @@ namespace connection_actions
  */
 using connection_actions_list = unisock::events::actions_list<
     events::action<connection_actions::RECV,
-        std::function<void (const char*, size_t)> >,
-
-    events::action<connection_actions::ERROR,
-        std::function<void (const std::string&, int)> >
+        std::function<void (const char*, size_t)> >
 >;
 
 
@@ -254,7 +238,7 @@ class connection_base
             int n_bytes = ::send(this->get_socket(), message, message_len, 0);
             if (n_bytes < 0)
             {
-                this->template execute<connection_actions::ERROR>("send", errno);
+                this->template execute<basic_actions::ERROR>("send", errno);
                 return false;
             }
             if (static_cast<size_t>(n_bytes) < message_len)
@@ -308,7 +292,7 @@ class connection_base
             int n_bytes = ::recv(this->get_socket(), buffer, base_type::RECV_BUFFER_SIZE, 0);
             if (n_bytes < 0)
             {
-                this->template execute<connection_actions::ERROR>("recv", errno);
+                this->template execute<basic_actions::ERROR>("recv", errno);
                 return n_bytes;
             }
             if (n_bytes == 0)
@@ -334,7 +318,7 @@ class connection_base
             int n_bytes = ::send(this->get_socket(), send_buffer.front().c_str(), send_buffer.front().size(), 0);
             if (n_bytes < 0)
             {
-                this->template execute<connection_actions::ERROR>("send", errno);
+                this->template execute<basic_actions::ERROR>("send", errno);
                 return ;
             }
             if (static_cast<size_t>(n_bytes) < send_buffer.front().size())

@@ -73,20 +73,7 @@ namespace actions
         static constexpr const char* action_name = "RECVFROM";
         static constexpr const char* callback_prototype = "void (const socket_address&, const char*, size_t)";
     };
-
-    /**
-     * @brief   called on error
-     * 
-     * @details specifies function which returned the error and errno for that error
-     * 
-     * @note    hook prototype: ```void  (const std::string& function, int errno)```
-     */
-    struct  ERROR
-    {
-        static constexpr const char* action_name = "ERROR";
-        static constexpr const char* callback_prototype = "void (const std::string&, int)";
-    };
-} // ******** namespace socket_actions
+} // ******** namespace actions
 
 
 /**
@@ -95,17 +82,14 @@ namespace actions
  * @tparam _ExtendedActions additionnal actions, for childrens of raw::socket actions
  */
 template<typename ..._ExtendedActions>
-using   socket_actions = unisock::events::actions_list<
+using   actions_list = unisock::events::actions_list<
 
     unisock::events::action<actions::RECVMSG, 
             std::function< void (const msghdr& message) > >,
 
     unisock::events::action<actions::RECVFROM, 
             std::function< void (const socket_address& address, const char *message, size_t message_len) > >,
-
-    unisock::events::action<actions::ERROR, 
-            std::function< void (const std::string& func, int error) > >,
-
+    
     _ExtendedActions...
 >;
 
@@ -163,7 +147,7 @@ class socket_impl<
                     unisock::entity_model<_SocketModelData...>
                  >
     :   public unisock::socket<
-                                socket_actions<_ExtendedActions...>,
+                                raw::actions_list<_ExtendedActions...>,
                                 unisock::entity_model<_SocketModelData...>
                               >
 {
@@ -171,7 +155,7 @@ class socket_impl<
         /**
          * @brief type of the base socket
          */
-        using base_type = unisock::socket<socket_actions<_ExtendedActions...>, unisock::entity_model<_SocketModelData...>>;
+        using base_type = unisock::socket<raw::actions_list<_ExtendedActions...>, unisock::entity_model<_SocketModelData...>>;
 
         /**
          * @brief empty constructor, socket will be self-handeled
@@ -203,7 +187,7 @@ class socket_impl<
             ssize_t n_bytes = ::sendmsg(this->get_socket(), &message, flags);
             if (n_bytes < 0)
             {
-                this->template execute<actions::ERROR>("sendmsg", errno);
+                this->template execute<basic_actions::ERROR>("sendmsg", errno);
                 return (false);
             }
             return (true);
@@ -220,7 +204,7 @@ class socket_impl<
          * 
          * @return true if message was sent, false on error, ERROR hook is called with errno of error
          */
-        bool    sendto(const socket_address& address, const char* message, size_t size, int flags = 0)
+        bool    send_to(const socket_address& address, const char* message, size_t size, int flags = 0)
         {
             assert(this->get_socket() > 0);
 
@@ -232,7 +216,7 @@ class socket_impl<
                                         address.size());
             if (n_bytes < 0)
             {
-                this->template execute<actions::ERROR>("sendto", errno);
+                this->template execute<basic_actions::ERROR>("sendto", errno);
                 return (false);
             }
             return (true);
@@ -264,7 +248,7 @@ class socket_impl<
             int n_bytes = ::recvmsg(this->get_socket(), &header, MSG_DONTWAIT);
             if (n_bytes < 0)
             {
-                this->template execute<actions::ERROR>("recvmsg", errno);
+                this->template execute<basic_actions::ERROR>("recvmsg", errno);
                 return (false);
             }
 
@@ -299,7 +283,7 @@ class socket_impl<
                                         &addr_len);
             if (n_bytes < 0)
             {
-                this->template execute<actions::ERROR>("recv", errno);
+                this->template execute<basic_actions::ERROR>("recv", errno);
                 return (false);
             }
 

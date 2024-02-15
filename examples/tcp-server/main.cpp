@@ -37,7 +37,7 @@ int main()
     });
 
 
-    server.on<ERROR>([](const std::string& func, int err){
+    server.on<basic_actions::ERROR>([](const std::string& func, int err){
         std::cout << "error: " << func << ": " << strerror(err) << std::endl;
     });
 

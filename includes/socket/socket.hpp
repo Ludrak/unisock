@@ -98,6 +98,21 @@ namespace basic_actions
         static constexpr const char* action_name = "CLOSED";
         static constexpr const char* callback_prototype = "void ()";
     };
+
+
+
+    /**
+     * @brief   called on syscall error
+     * 
+     * @details specifies function which returned the error and errno for that error
+     * 
+     * @note    hook prototype: ```void  (const std::string& function, int errno)```
+     */
+    struct  ERROR
+    {
+        static constexpr const char* action_name = "ERROR";
+        static constexpr const char* callback_prototype = "void (const std::string&, int)";
+    };
 };
 
 
@@ -111,6 +126,7 @@ using basic_actions_list = std::tuple<
     events::action<basic_actions::READABLE, std::function< void (void) > >,
     events::action<basic_actions::WRITEABLE, std::function< void (void) > >,
     events::action<basic_actions::CLOSED, std::function< void (void) > >,
+    events::action<basic_actions::ERROR, std::function< void (const std::string&, int) > >,
     _Actions...
 >;
 
@@ -200,10 +216,13 @@ class socket<
          * 
          * @return false if **socket()** call fails, error can be retrieved in **errno**
          */
-        bool    open(int domain, int type, int protocol) override
+        bool    open(int domain, int type, int protocol)
         {
             if (!socket_base::open(domain, type, protocol))
+            {
+                this->template execute<basic_actions::ERROR>("socket", errno);
                 return (false);
+            }
             this->handler->add_socket(get_socket(), this);
             return (true);
         }
@@ -212,8 +231,11 @@ class socket<
         /**
          * @brief closes the socket file descriptor
          */
-        void    close() override
+        void    close()
         {
+            if (get_socket() < 0)
+                return ;
+            
             // deleting from handler
             this->handler->delete_socket(get_socket());
             // closes the socket so any operations on it on basic_actions::CLOSED will be invalid,
@@ -231,7 +253,10 @@ class socket<
         bool    bind()
         {
             if (0 > ::bind(this->get_socket(), this->address.template to<sockaddr>(), this->address.size()))
+            {
+                this->template execute<basic_actions::ERROR>("bind", errno);
                 return (false);
+            }
             return (true);
         }
 
@@ -270,16 +295,6 @@ class socket<
         {
             this->template execute <basic_actions::WRITEABLE>();
         }
-
-        // /**
-        //  * @brief returns the reference to the handler handeling this socket
-        //  * 
-        //  * @return handler handeling this socket
-        //  */
-        // events::handler&    get_handler()
-        // {
-        //     return (this->handler); 
-        // }
 
 
         /**

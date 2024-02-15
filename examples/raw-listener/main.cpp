@@ -10,7 +10,7 @@ int main()
     raw::socket socket { };
 
 
-    socket.on<unisock::basic_actions::READABLE>([&socket](){
+    socket.on<basic_actions::READABLE>([&socket](){
         socket.recvfrom();
     });
 
@@ -18,7 +18,7 @@ int main()
         std::cout << "received message from " << address.to_string() << ": " << std::string(message, message_len) << std::endl;
     });
 
-    socket.on<ERROR>([](const std::string& func, int message){
+    socket.on<basic_actions::ERROR>([](const std::string& func, int message){
         std::cout << "error: " << func << ": " << message << std::endl;
     });
 

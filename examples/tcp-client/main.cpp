@@ -25,7 +25,7 @@ int main()
         std::cout << "received from connection " << socket_address::get_ip(connection->address) << ": " << std::string(message, bytes) << std::endl;
     });
 
-    client.on<ERROR>([](const std::string& func, int err){
+    client.on<basic_actions::ERROR>([](const std::string& func, int err){
         std::cout << "error: " << func << ": " << strerror(err) << std::endl;
     });
 

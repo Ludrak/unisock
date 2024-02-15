@@ -33,7 +33,7 @@ int main(int argc, char** argv)
             write(1, "+", 1);
         });
 
-        client.on<ERROR>([](const std::string& func, int err){
+        client.on<basic_actions::ERROR>([](const std::string& func, int err){
             std::cout << std::endl << "error: " << func << ": " << strerror(err) << std::endl;
         });
     }

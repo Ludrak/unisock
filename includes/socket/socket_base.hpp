@@ -65,13 +65,13 @@ class socket_base
          * 
          * @return false if **socket()** call fails, error can be retrieved in **errno**
          */
-        virtual bool    open(int domain, int type, int protocol);
+        bool    open(int domain, int type, int protocol);
 
         /**
          * @brief closes the socket file descriptor
          * @note    this call is inherited in unisock::socket<_Data> where socket is added to handler for poll events
          */
-        virtual void    close();
+        void    close();
         
         /**
          * @brief returns the socket file descriptor

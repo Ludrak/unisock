@@ -66,7 +66,7 @@ namespace client_actions
 template<typename _Connection, typename ..._ExtendedActions>
 using   client_actions_list = unisock::events::actions_list<
 
-    events::action<common_actions::ERROR,
+    events::action<basic_actions::ERROR,
         std::function<void (const std::string&, int)> >,
 
     events::action<client_actions::CONNECT,
@@ -193,14 +193,14 @@ class client_impl   <
          * @param port      port to connect to
          * @param use_IPv6  use IPv6
          * 
-         * @return true if connection succeeded, false otherwise, error can be retrieved in errno and in tcp::common_actions::ERROR hook of tcp::client 
+         * @return true if connection succeeded, false otherwise, error can be retrieved in errno and in tcp::basic_actions::ERROR hook of tcp::client 
          */
         bool    connect(const std::string& hostname, ushort port, bool use_IPv6 = false)
         {
             connection_type* conn = this->container.make_socket(use_IPv6 ? AF_INET6 : AF_INET, SOCK_STREAM, 0);
             if (conn == nullptr)
             {
-                this->template execute<common_actions::ERROR>("socket", errno);
+                this->template execute<basic_actions::ERROR>("socket", errno);
                 return false;
             }
 
@@ -213,7 +213,7 @@ class client_impl   <
 
             if (addrinfo_result::SUCCESS != socket_address::addrinfo(conn->address, hostname, use_IPv6 ? AF_INET6 : AF_INET))
             {
-                this->template execute<common_actions::ERROR>("getaddrinfo", errno);
+                this->template execute<basic_actions::ERROR>("getaddrinfo", errno);
                 conn->close();
                 // this->delete_socket(conn->get_socket());
                 return false;
@@ -227,7 +227,7 @@ class client_impl   <
             {
                 conn->close();
                 // this->delete_socket(conn->get_socket());
-                this->template execute<common_actions::ERROR>("listen", errno);
+                this->template execute<basic_actions::ERROR>("listen", errno);
                 return false;
             }
 

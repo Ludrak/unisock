@@ -86,17 +86,17 @@ if (build-examples)
 	target_link_libraries(tcp-client cppsockets)
 
 
-	# # Basic udp server
-	# add_executable(udp-server
-	# 	examples/udp-server/main.cpp
-	# )
-	# target_link_libraries(udp-server cppsockets)
+	# Basic udp server
+	add_executable(udp-server
+		examples/udp-server/main.cpp
+	)
+	target_link_libraries(udp-server cppsockets)
 
-	# # Basic udp client
-	# add_executable(udp-client
-	# 	examples/udp-client/main.cpp
-	# )
-	# target_link_libraries(udp-client cppsockets)
+	# Basic udp client
+	add_executable(udp-client
+		examples/udp-client/main.cpp
+	)
+	target_link_libraries(udp-client cppsockets)
 
 
 	# Basic raw listener
